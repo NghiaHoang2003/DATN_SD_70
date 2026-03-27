@@ -1,0 +1,56 @@
+﻿@{
+    ViewData["Title"] = "Giỏ hàng";
+}
+
+<h3 class="fw-bold mb-4 mt-4">Giỏ hàng của bạn</h3>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-body p-4">
+                <div class="row align-items-center mb-3">
+                    <div class="col-3 col-md-2">
+                        <img src="https://placehold.co/80x100/e9ecef/495057" class="img-fluid rounded-3" alt="Áo">
+                    </div>
+                    <div class="col-9 col-md-4">
+                        <h6 class="fw-bold mb-1">Áo Khoác Phao Dáng Dài</h6>
+                        <small class="text-muted">Phân loại: Đen - L</small>
+                    </div>
+                    <div class="col-6 col-md-2 mt-3 mt-md-0">
+                        <span class="fw-bold text-danger">1,250,000 đ</span>
+                    </div>
+                    <div class="col-4 col-md-2 mt-3 mt-md-0">
+                        <input type="number" class="form-control text-center rounded-3" value="1" min="1">
+                    </div>
+                    <div class="col-2 col-md-2 mt-3 mt-md-0 text-end">
+                        <button class="btn btn-outline-danger border-0"><i class="bi bi-trash3 fs-5"></i></button>
+                    </div>
+                </div>
+                <hr class="text-muted">
+                <a href="/" class="text-decoration-none text-dark fw-bold"><i class="bi bi-arrow-left me-2"></i>Tiếp tục mua sắm</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm rounded-4 bg-white">
+            <div class="card-body p-4">
+                <h5 class="fw-bold mb-4">Tóm tắt đơn hàng</h5>
+                <div class="d-flex justify-content-between mb-3">
+                    <span class="text-muted">Tạm tính:</span>
+                    <span class="fw-bold">1,250,000 đ</span>
+                </div>
+                <div class="d-flex justify-content-between mb-3">
+                    <span class="text-muted">Phí vận chuyển:</span>
+                    <span>Chưa tính</span>
+                </div>
+                <hr class="text-muted">
+                <div class="d-flex justify-content-between mb-4">
+                    <span class="fs-5 fw-bold">Tổng cộng:</span>
+                    <span class="fs-5 fw-bold text-danger">1,250,000 đ</span>
+                </div>
+                <a href="/Home/Checkout" class="btn btn-dark btn-lg w-100 fw-bold rounded-pill shadow-sm">TIẾN HÀNH THANH TOÁN</a>
+            </div>
+        </div>
+    </div>
+</div>

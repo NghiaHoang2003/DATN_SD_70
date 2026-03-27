@@ -1,0 +1,158 @@
+﻿@{
+    ViewData["Title"] = "Thanh toán";
+}
+
+<h3 class="fw-bold mb-4 mt-4">Thông tin giao hàng</h3>
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm rounded-4 p-4">
+            <form>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label fw-bold">Họ và tên người nhận</label>
+                        <input type="text" class="form-control form-control-lg rounded-3" placeholder="Nhập họ tên đầy đủ">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Số điện thoại</label>
+                        <input type="tel" class="form-control form-control-lg rounded-3" placeholder="09xx xxx xxx">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Email</label>
+                        <input type="email" class="form-control form-control-lg rounded-3" placeholder="email@example.com">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-bold">Địa chỉ nhận hàng</label>
+                        <input type="text" class="form-control form-control-lg rounded-3" placeholder="Số nhà, đường, phường/xã, quận/huyện...">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-bold">Ghi chú (Tùy chọn)</label>
+                        <textarea class="form-control rounded-3" rows="2" placeholder="Ghi chú thêm về thời gian giao hàng..."></textarea>
+                    </div>
+
+                    <h5 class="fw-bold mt-4 mb-2">Phương thức thanh toán</h5>
+                    <div class="col-12">
+                        <div class="form-check p-3 border rounded-3 mb-2 bg-light">
+                            <input class="form-check-input ms-1" type="radio" name="payment" id="cod" checked>
+                            <label class="form-check-label ms-2 fw-bold" for="cod">
+                                Thanh toán khi nhận hàng (COD)
+                            </label>
+                        </div>
+                        <div class="form-check p-3 border rounded-3">
+                            <input class="form-check-input ms-1" type="radio" name="payment" id="bank">
+                            <label class="form-check-label ms-2 fw-bold" for="bank">
+                                Chuyển khoản ngân hàng
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-success btn-lg w-100 mt-4 fw-bold py-3 rounded-pill shadow">ĐẶT HÀNG NGAY</button>
+            </form>
+        </div>
+    </div>
+    
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm rounded-4 bg-light p-4">
+            <h5 class="fw-bold mb-4">Đơn hàng của bạn (1)</h5>
+            
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex align-items-center">
+                    <img src="https://placehold.co/50x60" class="rounded me-3" alt="Áo">
+                    <div>
+                        <h6 class="mb-0 fw-bold">Áo Khoác Phao Dáng Dài</h6>
+                        <small class="text-muted">SL: 1 | Đen - L</small>
+                    </div>
+                </div>
+                <span class="fw-bold">1,250,000 đ</span>
+            </div>
+            
+            <hr class="text-muted">
+            
+            <div class="d-flex justify-content-between mb-2 text-muted">
+                <span>Tạm tính</span>
+                <span>1,250,000 đ</span>
+            </div>
+            <div class="d-flex justify-content-between mb-3 text-muted">
+                <span>Phí vận chuyển</span>
+                <span>30,000 đ</span>
+            </div>
+            <hr>
+            <div class="d-flex justify-content-between fs-5">
+                <span class="fw-bold">Tổng thanh toán:</span>
+                <span class="fw-bold text-danger">1,280,000 đ</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Đọc giỏ hàng hiển thị ra Tóm tắt đơn hàng (Tùy chọn hiển thị)
+        const cart = JSON.parse(localStorage.getItem('winterCart')) || [];
+        if (cart.length === 0) {
+            alert("Giỏ hàng của bạn đang trống!");
+            window.location.href = '/';
+            return;
+        }
+
+        // Gắn sự kiện cho nút ĐẶT HÀNG NGAY (Nhớ thêm id="btnPlaceOrder" vào button)
+        document.getElementById('btnPlaceOrder').addEventListener('click', async function() {
+            // 1. Lấy thông tin khách hàng từ Form
+            // Nhớ thêm các id tương ứng cho các thẻ input trong HTML của bạn
+            const tenKhachHang = document.getElementById('customerName').value;
+            const soDienThoai = document.getElementById('customerPhone').value;
+            const diaChi = document.getElementById('customerAddress').value;
+
+            if(!tenKhachHang || !soDienThoai || !diaChi) {
+                alert("Vui lòng điền đầy đủ thông tin giao hàng!");
+                return;
+            }
+
+            // 2. Chuẩn bị Payload khớp với PlaceOrderRequest C# của bạn
+            const requestData = {
+                tenKhachHang: tenKhachHang,
+                soDienThoai: soDienThoai,
+                diaChiGiaoHang: diaChi,
+                items: cart.map(item => ({
+                    chiTietSanPhamID: item.chiTietSanPhamID,
+                    soLuong: item.soLuong
+                }))
+            };
+
+            // 3. Gọi API OrdersController
+            try {
+                // Đổi text nút thành Đang xử lý
+                const btn = document.getElementById('btnPlaceOrder');
+                btn.innerText = "Đang xử lý...";
+                btn.disabled = true;
+
+                const response = await fetch('/api/orders', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    alert(`Đặt hàng thành công! Mã đơn hàng của bạn là: ${result.hoaDonID}`);
+                    
+                    // Xóa giỏ hàng sau khi đặt xong
+                    localStorage.removeItem('winterCart');
+                    
+                    // Chuyển về trang chủ
+                    window.location.href = '/';
+                } else {
+                    const error = await response.json();
+                    alert(`Lỗi: ${error.message || "Kiểm tra lại dữ liệu nhập"}`);
+                    btn.innerText = "ĐẶT HÀNG NGAY";
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                console.error("Lỗi khi gọi API:", error);
+                alert("Lỗi kết nối đến máy chủ.");
+            }
+        });
+    });
+</script>

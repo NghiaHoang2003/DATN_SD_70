@@ -1,8 +1,58 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Bộ Sưu Tập";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="text-center mb-5 mt-4">
+    <h1 class="fw-bold">Bộ Sưu Tập Mùa Đông 2026</h1>
+    <p class="text-muted">Ấm áp, phong cách và sẵn sàng cho những ngày lạnh giá.</p>
 </div>
+
+<div class="row g-4" id="productList">
+    <div class="col-12 text-center text-muted">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-2">Đang tải sản phẩm...</p>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+                document.addEventListener("DOMContentLoaded", async function () {
+            const container = document.getElementById("productList");
+            container.innerHTML = '<p class="text-center text-muted">Đang tải dữ liệu mùa đông...</p>';
+
+            try {
+                // Gọi thẳng vào API của bạn
+                const response = await fetch('/api/products');
+                const products = await response.json();
+
+                if (products.length === 0) {
+                    container.innerHTML = '<p class="text-center">Hiện chưa có sản phẩm nào.</p>';
+                    return;
+                }
+
+                let html = '';
+                products.forEach(p => {
+                    // p.sanPhamID, p.ten, p.giaThapNhat (JS tự động viết thường chữ cái đầu)
+                    html += `
+                    <div class="col-md-3">
+                        <div class="card h-100 border-0 shadow-sm rounded-3">
+                            <img src="https://placehold.co/400x500/e9ecef/495057?text=${encodeURIComponent(p.ten)}" class="card-img-top rounded-top-3" alt="${p.ten}">
+                            <div class="card-body text-center d-flex flex-column">
+                                <h6 class="card-title text-truncate fw-bold">${p.ten}</h6>
+                                <p class="card-text text-danger fw-bold">${p.giaThapNhat.toLocaleString('vi-VN')} đ</p>
+                                <div class="mt-auto">
+                                    <a href="/Home/Details?id=${p.sanPhamID}" class="btn btn-outline-dark w-100 rounded-pill">Xem chi tiết</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+                });
+                container.innerHTML = html;
+
+            } catch (error) {
+                console.error("Lỗi khi tải sản phẩm:", error);
+                container.innerHTML = '<p class="text-center text-danger">Có lỗi xảy ra khi kết nối máy chủ.</p>';
+            }
+        });
+    </script>
+}

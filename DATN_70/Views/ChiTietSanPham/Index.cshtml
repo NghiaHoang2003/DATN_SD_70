@@ -1,0 +1,136 @@
+﻿@{
+    ViewData["Title"] = "Chi tiết sản phẩm";
+}
+
+<div class="card border-0 shadow-sm rounded-4 p-4 mt-4">
+    <div class="row">
+        <div class="col-md-5 text-center mb-3 mb-md-0">
+            <img src="https://placehold.co/500x600/e9ecef/495057?text=Ao+Khoac+Phao" class="img-fluid rounded-3 shadow-sm" alt="Áo khoác">
+        </div>
+        
+        <div class="col-md-7 pt-2">
+            <span class="badge bg-dark mb-2">Hàng mới về</span>
+            <h2 class="fw-bold" id="productName">Áo Khoác Phao Dáng Dài Cao Cấp</h2>
+            <h3 class="text-danger fw-bold my-3" id="productPrice">1,250,000 đ</h3>
+            <p class="text-muted lh-lg" id="productDesc">Áo khoác phao siêu nhẹ, giữ nhiệt cực tốt. Phù hợp cho nhiệt độ dưới 10 độ C. Lớp ngoài chống nước nhẹ, bên trong chần bông gòn tự nhiên đảm bảo sự ấm áp tuyệt đối cho mùa đông năm nay.</p>
+            
+            <hr class="my-4 text-muted">
+            
+            <form action="/Cart/Add" method="post">
+                <div class="row mb-4">
+                    <div class="col-12 mb-3">
+                        <label class="form-label fw-bold">Chọn Phân loại</label>
+                        <select id="variantSelect" class="form-select form-select-lg rounded-3">
+                            <option value="1">Màu Đen - Size M</option>
+                            <option value="2">Màu Đen - Size L</option>
+                            <option value="3">Màu Trắng - Size M</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Số lượng</label>
+                        <input type="number" class="form-control form-control-lg rounded-3" value="1" min="1">
+                    </div>
+                </div>
+                
+                <button id="btnAddToCart"  type="button" class="btn btn-primary btn-lg w-100 py-3 fw-bold rounded-pill shadow-sm">
+                    <i class="bi bi-cart-plus me-2"></i> THÊM VÀO GIỎ HÀNG
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", async function () {
+        
+        // --- PHẦN 1: TẢI DỮ LIỆU TỪ API ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const productId = urlParams.get('id');
+
+        if (!productId) {
+            alert("Không tìm thấy mã sản phẩm!");
+            window.location.href = '/';
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/products/${productId}`);
+            
+            if (!response.ok) {
+                document.getElementById('productName').innerText = "Sản phẩm không tồn tại.";
+                return;
+            }
+
+            const p = await response.json();
+
+            document.getElementById('productName').innerText = p.ten;
+            document.getElementById('productDesc').innerText = p.moTa;
+            
+            const select = document.getElementById('variantSelect');
+            select.innerHTML = '';
+            
+            if (p.bienThe && p.bienThe.length > 0) {
+                document.getElementById('productPrice').innerText = p.bienThe[0].giaNiemYet.toLocaleString('vi-VN') + ' đ';
+
+                p.bienThe.forEach(v => {
+                    const option = document.createElement('option');
+                    option.value = v.chiTietSanPhamID;
+                    option.text = `Màu ${v.tenMau} - Size ${v.tenKichCo} - ${v.giaNiemYet.toLocaleString('vi-VN')} đ`;
+                    select.appendChild(option);
+                });
+            } else {
+                select.innerHTML = '<option disabled>Hết hàng</option>';
+            }
+        } catch (error) {
+            console.error("Lỗi khi tải chi tiết:", error);
+        }
+
+        // --- PHẦN 2: XỬ LÝ NÚT THÊM VÀO GIỎ HÀNG ---
+        const btnAdd = document.getElementById('btnAddToCart');
+        if (btnAdd) {
+            btnAdd.addEventListener('click', function() {
+                const selectVariant = document.getElementById('variantSelect');
+                // Lấy ô input số lượng (đã fix lại query selector cho an toàn)
+                const quantityInput = document.querySelector('input[type="number"]');
+                const quantity = parseInt(quantityInput.value) || 1;
+                
+                if (selectVariant.selectedIndex === -1) {
+                    alert("Vui lòng chọn phân loại sản phẩm!");
+                    return;
+                }
+
+                const selectedOption = selectVariant.options[selectVariant.selectedIndex];
+                const chiTietSanPhamID = selectedOption.value;
+                const tenPhanLoai = selectedOption.text;
+                
+                const priceString = tenPhanLoai.split('-').pop().replace(/\D/g, '');
+                const price = parseInt(priceString) || 0;
+
+                const productName = document.getElementById('productName').innerText;
+
+                const item = {
+                    chiTietSanPhamID: chiTietSanPhamID,
+                    tenSanPham: productName,
+                    phanLoai: tenPhanLoai.split('-')[0].trim() + ' - ' + tenPhanLoai.split('-')[1].trim(),
+                    soLuong: quantity,
+                    donGia: price
+                };
+
+                let cart = JSON.parse(localStorage.getItem('winterCart')) || [];
+
+                const existingItemIndex = cart.findIndex(x => x.chiTietSanPhamID === chiTietSanPhamID);
+                if (existingItemIndex > -1) {
+                    cart[existingItemIndex].soLuong += quantity;
+                } else {
+                    cart.push(item);
+                }
+
+                localStorage.setItem('winterCart', JSON.stringify(cart));
+                alert("Đã thêm vào giỏ hàng thành công!");
+            });
+        }
+    });
+</script>
