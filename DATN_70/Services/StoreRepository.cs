@@ -111,7 +111,16 @@ public sealed class StoreRepository : IStoreRepository
         PlaceOrderRequest request,
         CancellationToken cancellationToken)
     {
-        if (request.Items.Count == 0)
+        var normalizedItems = request.Items
+            .GroupBy(item => item.ChiTietSanPhamID)
+            .Select(group => new OrderItemRequest
+            {
+                ChiTietSanPhamID = group.Key,
+                SoLuong = group.Sum(item => item.SoLuong)
+            })
+            .ToList();
+
+        if (normalizedItems.Count == 0)
         {
             return ServiceResult<OrderCreatedResponse>.Fail("Don hang phai co it nhat 1 san pham.");
         }
@@ -127,7 +136,7 @@ public sealed class StoreRepository : IStoreRepository
             decimal totalAmount = 0;
             var orderDetails = new List<(string DetailId, string ProductDetailId, int Quantity, decimal UnitPrice, decimal LineTotal)>();
 
-            foreach (var item in request.Items)
+            foreach (var item in normalizedItems)
             {
                 var stockInfo = await GetStockInfoAsync(connection, transaction, item.ChiTietSanPhamID, cancellationToken);
                 if (stockInfo is null)

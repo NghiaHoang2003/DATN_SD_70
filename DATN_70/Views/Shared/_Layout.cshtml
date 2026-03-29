@@ -1,31 +1,31 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - Tiệm Áo Mùa Đông</title>
-    
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    
+
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body class="bg-light d-flex flex-column min-vh-100">
-    
+
     <header>
         <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm mb-4">
             <div class="container">
-                <a class="navbar-brand fw-bold fs-4" href="/">❄️ WinterWear</a>
-                
+                <a class="navbar-brand fw-bold fs-4" href="/">WinterWear</a>
+
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                
+
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav me-auto fw-medium">
                         <li class="nav-item"><a class="nav-link" href="/">Trang chủ</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/Product">Áo Khoác Nam</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/Product">Áo Len Nữ</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/">Áo Khoác Nam</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/">Áo Len Nữ</a></li>
                     </ul>
                     <a href="/Home/Cart" class="btn btn-outline-dark position-relative rounded-pill px-4">
                         <i class="bi bi-cart3 me-1"></i> Giỏ hàng
@@ -44,6 +44,8 @@
         </main>
     </div>
 
+    <div id="toastContainer" class="toast-container position-fixed top-0 end-0 p-3"></div>
+
     <footer class="bg-white border-top text-muted text-center py-4 mt-auto shadow-sm">
         <div class="container">
             <p class="mb-0">&copy; 2026 - Website bán quần áo mùa đông - Phát triển bởi Nhóm 4</p>
@@ -51,7 +53,161 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    
+    <script>
+        (function () {
+            if (window.winterCart) {
+                return;
+            }
+
+            const storageKey = 'winterCart';
+
+            function getCart() {
+                try {
+                    const raw = localStorage.getItem(storageKey);
+                    const parsed = raw ? JSON.parse(raw) : [];
+                    return Array.isArray(parsed) ? parsed : [];
+                } catch {
+                    return [];
+                }
+            }
+
+            function notify(cart) {
+                window.dispatchEvent(new CustomEvent('winterCartChanged', { detail: cart }));
+            }
+
+            function saveCart(cart) {
+                localStorage.setItem(storageKey, JSON.stringify(cart));
+                notify(cart);
+            }
+
+            function normalizeQuantity(quantity) {
+                const parsed = Number.parseInt(quantity, 10);
+                return Number.isNaN(parsed) || parsed < 1 ? 1 : parsed;
+            }
+
+            function addItem(item) {
+                const cart = getCart();
+                const existing = cart.find(x => x.chiTietSanPhamID === item.chiTietSanPhamID);
+                const safeQuantity = normalizeQuantity(item.soLuong);
+
+                if (existing) {
+                    existing.soLuong += safeQuantity;
+                } else {
+                    cart.push({ ...item, soLuong: safeQuantity });
+                }
+
+                saveCart(cart);
+                return cart;
+            }
+
+            function updateQuantity(productDetailId, quantity) {
+                const cart = getCart();
+                const item = cart.find(x => x.chiTietSanPhamID === productDetailId);
+
+                if (!item) {
+                    return cart;
+                }
+
+                item.soLuong = normalizeQuantity(quantity);
+                saveCart(cart);
+                return cart;
+            }
+
+            function removeItem(productDetailId) {
+                const cart = getCart().filter(x => x.chiTietSanPhamID !== productDetailId);
+                saveCart(cart);
+                return cart;
+            }
+
+            function clear() {
+                localStorage.removeItem(storageKey);
+                notify([]);
+            }
+
+            function getTotalQuantity(cart = getCart()) {
+                return cart.reduce((sum, item) => sum + item.soLuong, 0);
+            }
+
+            function getSubtotal(cart = getCart()) {
+                return cart.reduce((sum, item) => sum + (item.donGia * item.soLuong), 0);
+            }
+
+            function formatCurrency(value) {
+                return Number(value || 0).toLocaleString('vi-VN') + ' đ';
+            }
+
+            function updateCartBadge(cart = getCart()) {
+                const badge = document.getElementById('cartBadge');
+                if (!badge) {
+                    return;
+                }
+
+                badge.textContent = getTotalQuantity(cart);
+            }
+
+            function showToast(message, type) {
+                const container = document.getElementById('toastContainer');
+                if (!container || !window.bootstrap) {
+                    return;
+                }
+
+                const bgClass = {
+                    success: 'text-bg-success',
+                    danger: 'text-bg-danger',
+                    warning: 'text-bg-warning',
+                    info: 'text-bg-dark'
+                }[type || 'info'] || 'text-bg-dark';
+
+                const toastElement = document.createElement('div');
+                toastElement.className = 'toast align-items-center border-0 ' + bgClass;
+                toastElement.setAttribute('role', 'alert');
+                toastElement.setAttribute('aria-live', 'assertive');
+                toastElement.setAttribute('aria-atomic', 'true');
+                toastElement.innerHTML =
+                    '<div class="d-flex">' +
+                    '<div class="toast-body">' + message + '</div>' +
+                    '<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>' +
+                    '</div>';
+
+                container.appendChild(toastElement);
+
+                const toast = new window.bootstrap.Toast(toastElement, { delay: 2500 });
+                toastElement.addEventListener('hidden.bs.toast', function () {
+                    toastElement.remove();
+                });
+                toast.show();
+            }
+
+            function isValidPhoneNumber(phoneNumber) {
+                return /^(0|\+84)\d{9,10}$/.test((phoneNumber || '').replace(/\s+/g, ''));
+            }
+
+            window.winterCart = {
+                getCart,
+                saveCart,
+                addItem,
+                updateQuantity,
+                removeItem,
+                clear,
+                getTotalQuantity,
+                getSubtotal,
+                formatCurrency,
+                updateCartBadge,
+                normalizeQuantity,
+                showToast,
+                isValidPhoneNumber
+            };
+
+            document.addEventListener('DOMContentLoaded', function () {
+                updateCartBadge();
+            });
+
+            window.addEventListener('winterCartChanged', function (event) {
+                updateCartBadge(event.detail);
+            });
+        })();
+    </script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
