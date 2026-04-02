@@ -8,11 +8,18 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddSingleton<DATN_70.Data.SqlConnectionFactory>();
+builder.Services.AddScoped<DATN_70.Data.StorefrontDataSeeder>();
 builder.Services.AddScoped<DATN_70.Services.IStoreRepository, DATN_70.Services.StoreRepository>();
 
 builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var seeder = scope.ServiceProvider.GetRequiredService<DATN_70.Data.StorefrontDataSeeder>();
+    await seeder.SeedAsync();
+}
 
 app.MapControllerRoute(
     name: "default",

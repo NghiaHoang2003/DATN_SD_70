@@ -1,57 +1,147 @@
-﻿@{
-    ViewData["Title"] = "Bộ Sưu Tập";
+@{
+    ViewData["Title"] = "Trang chủ";
 }
 
-<div class="text-center mb-5 mt-4">
-    <h1 class="fw-bold">Bộ Sưu Tập Mùa Đông 2026</h1>
-    <p class="text-muted">Ấm áp, phong cách và sẵn sàng cho những ngày lạnh giá.</p>
-</div>
+<section class="hero-shell">
+    <div class="hero-grid">
+        <div class="hero-copy">
+            <span class="eyebrow">Winter 2026 Collection</span>
+            <h1 class="display-title">Phong cách mùa đông thanh lịch cho mọi ngày xuống phố.</h1>
+            <p class="hero-text">
+                Khám phá những thiết kế giữ ấm tinh tế, dễ phối đồ và phù hợp từ công sở đến dạo phố cuối tuần.
+            </p>
+            <div class="hero-actions">
+                <a class="btn btn-brand" asp-controller="Home" asp-action="Products">Khám phá sản phẩm</a>
+                <a class="btn btn-ghost-light" asp-controller="Home" asp-action="Cart">Xem giỏ hàng</a>
+            </div>
+            <div class="hero-metrics">
+                <div class="metric-card">
+                    <strong>06+</strong>
+                    <span>Thiết kế chủ đạo mùa đông</span>
+                </div>
+                <div class="metric-card">
+                    <strong>18</strong>
+                    <span>Biến thể màu và size</span>
+                </div>
+                <div class="metric-card">
+                    <strong>7 ngày</strong>
+                    <span>Hỗ trợ đổi size linh hoạt</span>
+                </div>
+            </div>
+        </div>
 
-<div class="row g-4" id="productList">
-    <div class="col-12 text-center text-muted">
-        <div class="spinner-border text-primary" role="status"></div>
-        <p class="mt-2">Đang tải sản phẩm...</p>
+        <aside class="hero-feature">
+            <div class="hero-feature-card">
+                <p class="eyebrow mb-3">Editorial Drop</p>
+                <h3>Những lớp trang phục ấm áp dành cho nhịp sống thành thị.</h3>
+                <p class="hero-note">
+                    Từ áo phao, sweater đến măng tô, mọi thiết kế đều được chọn để mang lại cảm giác gọn gàng, hiện đại và dễ mặc.
+                </p>
+            </div>
+            <div class="highlight-stack mt-4">
+                <div class="highlight-card">
+                    <div class="icon-chip"><i class="bi bi-stars"></i></div>
+                    <h4>Thiết kế chỉn chu</h4>
+                    <p>Từng chi tiết được hoàn thiện với tinh thần tối giản, sang trọng và dễ cảm nhận ngay từ cái nhìn đầu tiên.</p>
+                </div>
+                <div class="highlight-card">
+                    <div class="icon-chip"><i class="bi bi-database-check"></i></div>
+                    <h4>Chọn lựa đa dạng</h4>
+                    <p>Nhiều kiểu dáng, màu sắc và size để bạn dễ dàng tìm được món đồ phù hợp với phong cách riêng.</p>
+                </div>
+            </div>
+        </aside>
     </div>
-</div>
+</section>
+
+<section class="section-block" id="story">
+    <div class="section-head">
+        <div>
+            <h2 class="section-title">Bộ sưu tập nổi bật</h2>
+            <p class="section-copy">Những lựa chọn dành cho mùa lạnh với phom dáng tinh gọn, bảng màu nhã và cảm giác mặc thoải mái suốt ngày dài.</p>
+        </div>
+    </div>
+    <div class="story-grid">
+        <article class="story-card dark">
+            <span class="eyebrow">Collection Story</span>
+            <h4>Winter Layers for City Rhythm</h4>
+            <p>
+                Visual được dựng theo tinh thần editorial: nền tối ở hero, phần nội dung thương mại chuyển sang tông kem sáng để tạo độ sang và giữ khả năng đọc tốt.
+            </p>
+            <div class="inline-actions">
+                <a class="btn btn-brand" asp-controller="Home" asp-action="Products">Xem toàn bộ catalog</a>
+            </div>
+        </article>
+        <article class="story-card">
+            <div class="icon-chip"><i class="bi bi-bag-check"></i></div>
+            <h4>Dễ chọn, dễ mua</h4>
+            <p>Thông tin rõ ràng, lựa chọn nhanh và trải nghiệm mua sắm mượt mà trên cả desktop lẫn điện thoại.</p>
+        </article>
+    </div>
+</section>
+
+<section class="section-block">
+    <div class="section-head">
+        <div>
+            <h2 class="section-title">Sản phẩm nổi bật</h2>
+            <p class="section-copy">Những mẫu được yêu thích nhờ khả năng giữ ấm tốt, phom đẹp và tính ứng dụng cao trong tủ đồ mùa đông.</p>
+        </div>
+        <a class="page-tag" asp-controller="Home" asp-action="Products">Đi tới trang sản phẩm</a>
+    </div>
+    <div id="featuredProducts" class="product-grid">
+        <div class="loading-state">
+            <div class="spinner-border" role="status"></div>
+            <p class="mt-3 mb-0">Đang tải sản phẩm nổi bật...</p>
+        </div>
+    </div>
+</section>
+
+<section class="section-block" id="service">
+    <div class="section-head">
+        <div>
+            <h2 class="section-title">Lý do khách hàng yêu thích</h2>
+            <p class="section-copy">Chúng tôi theo đuổi những thiết kế đẹp mắt nhưng vẫn thực tế, dễ mặc và phù hợp với nhịp sống hằng ngày.</p>
+        </div>
+    </div>
+    <div class="service-grid">
+        <article class="service-card">
+            <div class="service-icon"><i class="bi bi-phone"></i></div>
+            <h4>Dễ mua trên mọi thiết bị</h4>
+            <p>Trải nghiệm mua sắm liền mạch với bố cục rõ ràng và thao tác nhanh chóng từ điện thoại đến máy tính.</p>
+        </article>
+        <article class="service-card">
+            <div class="service-icon"><i class="bi bi-cart3"></i></div>
+            <h4>Đặt hàng nhanh chóng</h4>
+            <p>Thông tin sản phẩm, biến thể và thanh toán được trình bày mạch lạc để giúp bạn hoàn tất đơn hàng dễ dàng.</p>
+        </article>
+        <article class="service-card">
+            <div class="service-icon"><i class="bi bi-shield-check"></i></div>
+            <h4>An tâm khi mua sắm</h4>
+            <p>Hỗ trợ kiểm hàng, đổi size linh hoạt và luôn ưu tiên chất lượng hoàn thiện cho từng sản phẩm.</p>
+        </article>
+    </div>
+</section>
 
 @section Scripts {
     <script>
-                document.addEventListener("DOMContentLoaded", async function () {
-            const container = document.getElementById("productList");
-            container.innerHTML = '<p class="text-center text-muted">Đang tải dữ liệu mùa đông...</p>';
+        document.addEventListener("DOMContentLoaded", async function () {
+            const container = document.getElementById("featuredProducts");
 
             try {
-                // Gọi thẳng vào API của bạn
-                const response = await fetch('/api/products');
-                const products = await response.json();
+                const products = await window.winterStore.fetchProducts();
+                const featured = products
+                    .sort((a, b) => b.tongSoLuongTon - a.tongSoLuongTon)
+                    .slice(0, 3);
 
-                if (products.length === 0) {
-                    container.innerHTML = '<p class="text-center">Hiện chưa có sản phẩm nào.</p>';
+                if (featured.length === 0) {
+                    container.innerHTML = '<div class="empty-state">Chưa có sản phẩm để hiển thị trên trang chủ.</div>';
                     return;
                 }
 
-                let html = '';
-                products.forEach(p => {
-                    // p.sanPhamID, p.ten, p.giaThapNhat (JS tự động viết thường chữ cái đầu)
-                    html += `
-                    <div class="col-md-3">
-                        <div class="card h-100 border-0 shadow-sm rounded-3">
-                            <img src="https://placehold.co/400x500/e9ecef/495057?text=${encodeURIComponent(p.ten)}" class="card-img-top rounded-top-3" alt="${p.ten}">
-                            <div class="card-body text-center d-flex flex-column">
-                                <h6 class="card-title text-truncate fw-bold">${p.ten}</h6>
-                                <p class="card-text text-danger fw-bold">${p.giaThapNhat.toLocaleString('vi-VN')} đ</p>
-                                <div class="mt-auto">
-                                    <a href="/Home/Details?id=${p.sanPhamID}" class="btn btn-outline-dark w-100 rounded-pill">Xem chi tiết</a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>`;
-                });
-                container.innerHTML = html;
-
+                container.innerHTML = featured.map(window.winterStore.renderProductCard).join("");
             } catch (error) {
-                console.error("Lỗi khi tải sản phẩm:", error);
-                container.innerHTML = '<p class="text-center text-danger">Có lỗi xảy ra khi kết nối máy chủ.</p>';
+                console.error(error);
+                container.innerHTML = '<div class="empty-state">Không thể tải sản phẩm nổi bật từ máy chủ.</div>';
             }
         });
     </script>
