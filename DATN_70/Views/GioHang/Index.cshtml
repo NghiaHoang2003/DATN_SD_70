@@ -2,136 +2,124 @@
     ViewData["Title"] = "Giỏ hàng";
 }
 
-<h3 class="fw-bold mb-4 mt-4">Giỏ hàng của bạn</h3>
-
-<div class="row g-4">
-    <div class="col-lg-8">
-        <div class="card border-0 shadow-sm rounded-4">
-            <div class="card-body p-4" id="cartItemsContainer">
-                <p class="text-muted mb-0">Đang tải giỏ hàng...</p>
-            </div>
+<section class="cart-shell">
+    <div class="page-head">
+        <div>
+            <span class="page-tag">Shopping Bag</span>
+            <h1 class="page-title">Giỏ hàng của bạn</h1>
+            <p class="page-copy">Người dùng có thể chỉnh số lượng, xóa sản phẩm và theo dõi tổng tiền trước khi sang bước thanh toán.</p>
         </div>
     </div>
 
-    <div class="col-lg-4">
-        <div class="card border-0 shadow-sm rounded-4 bg-white">
-            <div class="card-body p-4">
-                <h5 class="fw-bold mb-4">Tóm tắt đơn hàng</h5>
-                <div class="d-flex justify-content-between mb-3">
-                    <span class="text-muted">Tạm tính:</span>
-                    <span id="subtotalAmount" class="fw-bold">0 đ</span>
-                </div>
-                <div class="d-flex justify-content-between mb-3">
-                    <span class="text-muted">Phí vận chuyển:</span>
-                    <span>Chưa tính</span>
-                </div>
-                <hr class="text-muted">
-                <div class="d-flex justify-content-between mb-4">
-                    <span class="fs-5 fw-bold">Tổng cộng:</span>
-                    <span id="totalAmount" class="fs-5 fw-bold text-danger">0 đ</span>
-                </div>
-                <a id="checkoutLink" href="/Home/Checkout" class="btn btn-dark btn-lg w-100 fw-bold rounded-pill shadow-sm">TIẾN HÀNH THANH TOÁN</a>
-            </div>
+    <div class="cart-layout">
+        <div class="cart-panel">
+            <h4 class="cart-title">Danh sách sản phẩm</h4>
+            <div id="cartItemsContainer"></div>
         </div>
+
+        <aside class="summary-panel">
+            <h4 class="summary-title">Tóm tắt đơn hàng</h4>
+            <div class="summary-list">
+                <div class="summary-row">
+                    <span>Tạm tính</span>
+                    <strong id="subtotalAmount">0 đ</strong>
+                </div>
+                <div class="summary-row">
+                    <span>Phí vận chuyển</span>
+                    <span>Miễn phí</span>
+                </div>
+                <div class="summary-row summary-total">
+                    <span>Tổng cộng</span>
+                    <span id="totalAmount">0 đ</span>
+                </div>
+            </div>
+            <a id="checkoutLink" class="btn btn-brand checkout-submit" asp-controller="Home" asp-action="Checkout">Tiến hành thanh toán</a>
+        </aside>
     </div>
-</div>
+</section>
 
 @section Scripts {
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const cartItemsContainer = document.getElementById('cartItemsContainer');
-            const subtotalAmount = document.getElementById('subtotalAmount');
-            const totalAmount = document.getElementById('totalAmount');
-            const checkoutLink = document.getElementById('checkoutLink');
+        document.addEventListener("DOMContentLoaded", function () {
+            const cartItemsContainer = document.getElementById("cartItemsContainer");
+            const subtotalAmount = document.getElementById("subtotalAmount");
+            const totalAmount = document.getElementById("totalAmount");
+            const checkoutLink = document.getElementById("checkoutLink");
 
             function syncCheckoutState(cart) {
                 const disabled = cart.length === 0;
-                checkoutLink.classList.toggle('disabled', disabled);
-                checkoutLink.setAttribute('aria-disabled', String(disabled));
-                checkoutLink.tabIndex = disabled ? -1 : 0;
-                checkoutLink.style.pointerEvents = disabled ? 'none' : 'auto';
-                checkoutLink.style.opacity = disabled ? '0.65' : '1';
+                checkoutLink.classList.toggle("disabled", disabled);
+                checkoutLink.style.pointerEvents = disabled ? "none" : "auto";
+                checkoutLink.style.opacity = disabled ? "0.6" : "1";
             }
 
             function renderCart() {
                 const cart = window.winterCart.getCart();
                 const subtotal = window.winterCart.getSubtotal(cart);
-
                 subtotalAmount.textContent = window.winterCart.formatCurrency(subtotal);
                 totalAmount.textContent = window.winterCart.formatCurrency(subtotal);
                 syncCheckoutState(cart);
 
-                if (cart.length === 0) {
+                if (!cart.length) {
                     cartItemsContainer.innerHTML = `
-                        <div class="text-center py-4">
-                            <p class="text-muted mb-3">Giỏ hàng của bạn đang trống.</p>
-                            <a href="/" class="btn btn-outline-dark rounded-pill px-4">Mua sắm ngay</a>
+                        <div class="empty-state">
+                            Giỏ hàng đang trống. Hãy thêm vài sản phẩm để test tiếp luồng đặt hàng.
+                            <div class="inline-actions justify-content-center">
+                                <a class="btn btn-dark-soft" href="/Home/Products">Mở trang sản phẩm</a>
+                            </div>
                         </div>`;
                     return;
                 }
 
-                cartItemsContainer.innerHTML = `
-                    ${cart.map(item => `
-                        <div class="row align-items-center mb-3">
-                            <div class="col-3 col-md-2">
-                                <img src="https://placehold.co/80x100/e9ecef/495057?text=${encodeURIComponent(item.tenSanPham)}" class="img-fluid rounded-3" alt="${item.tenSanPham}">
-                            </div>
-                            <div class="col-9 col-md-4">
-                                <h6 class="fw-bold mb-1">${item.tenSanPham}</h6>
-                                <small class="text-muted">Phân loại: ${item.phanLoai}</small>
-                            </div>
-                            <div class="col-6 col-md-2 mt-3 mt-md-0">
-                                <span class="fw-bold text-danger">${window.winterCart.formatCurrency(item.donGia)}</span>
-                            </div>
-                            <div class="col-4 col-md-2 mt-3 mt-md-0">
-                                <input type="number" class="form-control text-center rounded-3 cart-quantity-input" value="${item.soLuong}" min="1" step="1" data-id="${item.chiTietSanPhamID}">
-                            </div>
-                            <div class="col-2 col-md-2 mt-3 mt-md-0 text-end">
-                                <button type="button" class="btn btn-outline-danger border-0 cart-remove-btn" data-id="${item.chiTietSanPhamID}">
-                                    <i class="bi bi-trash3 fs-5"></i>
-                                </button>
+                cartItemsContainer.innerHTML = cart.map(item => `
+                    <article class="cart-item">
+                        <div class="thumb-wrap">
+                            ${window.winterStore.buildArtwork({ sanPhamID: item.sanPhamID }, "card")}
+                        </div>
+                        <div>
+                            <a class="item-name" href="/Home/Details?id=${encodeURIComponent(item.sanPhamID || "")}">${window.winterStore.escapeHtml(item.tenSanPham)}</a>
+                            <div class="item-meta">${window.winterStore.escapeHtml(item.phanLoai)}</div>
+                            <div class="qty-actions">
+                                <input class="store-input qty-input cart-quantity-input" type="number" min="1" step="1" value="${item.soLuong}" data-id="${item.chiTietSanPhamID}" />
+                                <button type="button" class="link-button cart-remove-btn" data-id="${item.chiTietSanPhamID}">Xóa</button>
                             </div>
                         </div>
-                        <hr class="text-muted">`).join('')}
-                    <a href="/" class="text-decoration-none text-dark fw-bold"><i class="bi bi-arrow-left me-2"></i>Tiếp tục mua sắm</a>`;
+                        <strong class="price-amount">${window.winterCart.formatCurrency(item.donGia * item.soLuong)}</strong>
+                    </article>
+                `).join("");
             }
 
-            checkoutLink.addEventListener('click', function (event) {
+            checkoutLink.addEventListener("click", function (event) {
                 if (window.winterCart.getCart().length > 0) {
                     return;
                 }
-
                 event.preventDefault();
-                window.winterCart.showToast("Giỏ hàng đang trống, chưa thể thanh toán.", "warning");
+                window.winterCart.showToast("Giỏ hàng đang trống.", "warning");
             });
 
-            cartItemsContainer.addEventListener('change', function (event) {
-                if (!event.target.classList.contains('cart-quantity-input')) {
+            cartItemsContainer.addEventListener("change", function (event) {
+                if (!event.target.classList.contains("cart-quantity-input")) {
                     return;
                 }
-
                 const quantity = Number.parseInt(event.target.value, 10);
                 if (!Number.isInteger(quantity) || quantity < 1) {
                     event.target.value = 1;
-                    window.winterCart.showToast("Số lượng phải là số nguyên lớn hơn hoặc bằng 1.", "warning");
                 }
-
                 window.winterCart.updateQuantity(event.target.dataset.id, event.target.value);
                 renderCart();
             });
 
-            cartItemsContainer.addEventListener('click', function (event) {
-                const button = event.target.closest('.cart-remove-btn');
+            cartItemsContainer.addEventListener("click", function (event) {
+                const button = event.target.closest(".cart-remove-btn");
                 if (!button) {
                     return;
                 }
-
                 window.winterCart.removeItem(button.dataset.id);
                 window.winterCart.showToast("Đã xóa sản phẩm khỏi giỏ hàng.", "success");
                 renderCart();
             });
 
-            window.addEventListener('winterCartChanged', renderCart);
+            window.addEventListener("winterCartChanged", renderCart);
             renderCart();
         });
     </script>

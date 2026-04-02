@@ -1,29 +1,32 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 
-namespace DATN_70.Controllers
+namespace DATN_70.Controllers;
+
+public class HomeController : Controller
 {
-    public class HomeController : Controller
+    public IActionResult Index()
     {
-        // Bắt đường dẫn mặc định "/"
-        public IActionResult Index()
-        {
-            // Tự động tìm và trả về file Views/Home/Index.cshtml
-            return View();
-        }
-        public IActionResult Details()
-        {
-            // Chỉ định đích danh file Index trong thư mục ChiTietSanPham
-            return View("~/Views/ChiTietSanPham/Index.cshtml");
-        }
-        public IActionResult Cart()
-        {           
-            return View("~/Views/GioHang/Index.cshtml");
-        }
-        public IActionResult Checkout()
-        {           
-            return View("~/Views/PhuongThucThanhToan/Index.cshtml");
-        }
+        return View();
+    }
 
+    public IActionResult Products()
+    {
+        return View();
+    }
 
+    public IActionResult Details(string? id)
+    {
+        ViewData["ProductId"] = id ?? string.Empty;
+        return View("~/Views/ChiTietSanPham/Index.cshtml");
+    }
+
+    public IActionResult Cart()
+    {
+        return View("~/Views/GioHang/Index.cshtml");
+    }
+
+    public IActionResult Checkout()
+    {
+        return View("~/Views/PhuongThucThanhToan/Index.cshtml");
     }
 }

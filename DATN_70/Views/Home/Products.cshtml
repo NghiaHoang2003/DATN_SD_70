@@ -1,0 +1,157 @@
+@{
+    ViewData["Title"] = "Sản phẩm";
+}
+
+<section class="page-shell">
+    <div class="page-head">
+        <div>
+            <span class="page-tag">Online Catalog</span>
+            <h1 class="page-title">Danh mục sản phẩm mùa đông</h1>
+            <p class="page-copy">Khám phá những thiết kế giữ ấm theo nhiều phong cách khác nhau, từ tối giản thanh lịch đến trẻ trung năng động.</p>
+        </div>
+    </div>
+
+    <div class="catalog-layout">
+        <aside class="filter-panel">
+            <h4>Bộ lọc nhanh</h4>
+            <div class="filter-group">
+                <label class="control-label" for="searchInput">Tìm theo tên</label>
+                <input id="searchInput" class="search-field" type="text" placeholder="Ví dụ: áo phao, sweater..." />
+            </div>
+            <div class="filter-group">
+                <span class="control-label">Nhóm sản phẩm</span>
+                <div id="categoryChips" class="chip-row"></div>
+            </div>
+            <div class="filter-group">
+                <span class="control-label">Tình trạng</span>
+                <button id="stockToggle" type="button" class="chip-button">Chỉ hiện còn nhiều hàng</button>
+            </div>
+        </aside>
+
+        <div class="catalog-shell">
+            <div class="catalog-toolbar">
+                <input id="mobileSearchInput" class="search-field" type="text" placeholder="Tìm sản phẩm..." />
+                <select id="sortSelect" class="store-select">
+                    <option value="featured">Nổi bật</option>
+                    <option value="price-asc">Giá tăng dần</option>
+                    <option value="price-desc">Giá giảm dần</option>
+                    <option value="stock-desc">Tồn kho nhiều</option>
+                    <option value="name-asc">Tên A-Z</option>
+                </select>
+            </div>
+
+            <div id="resultSummary" class="result-summary">Đang tải dữ liệu sản phẩm...</div>
+            <div id="catalogGrid" class="product-grid">
+                <div class="loading-state">
+                    <div class="spinner-border" role="status"></div>
+                    <p class="mt-3 mb-0">Đang tải catalog...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", async function () {
+            const catalogGrid = document.getElementById("catalogGrid");
+            const resultSummary = document.getElementById("resultSummary");
+            const searchInput = document.getElementById("searchInput");
+            const mobileSearchInput = document.getElementById("mobileSearchInput");
+            const sortSelect = document.getElementById("sortSelect");
+            const categoryChips = document.getElementById("categoryChips");
+            const stockToggle = document.getElementById("stockToggle");
+
+            let products = [];
+            let selectedCategory = "all";
+            let stockOnly = false;
+
+            function syncSearch(value) {
+                searchInput.value = value;
+                mobileSearchInput.value = value;
+            }
+
+            function renderCategories(items) {
+                const categories = ["all", ...new Set(items.map(item => item.meta.category))];
+                categoryChips.innerHTML = categories.map(category => {
+                    const label = category === "all" ? "Tất cả" : category;
+                    const activeClass = category === selectedCategory ? "active" : "";
+                    return `<button type="button" class="chip-button ${activeClass}" data-category="${window.winterStore.escapeHtml(category)}">${window.winterStore.escapeHtml(label)}</button>`;
+                }).join("");
+            }
+
+            function applyFilters() {
+                const keyword = searchInput.value.trim().toLowerCase();
+                let filtered = products.filter(product => {
+                    const matchesKeyword = !keyword || product.ten.toLowerCase().includes(keyword) || product.meta.category.toLowerCase().includes(keyword);
+                    const matchesCategory = selectedCategory === "all" || product.meta.category === selectedCategory;
+                    const matchesStock = !stockOnly || product.tongSoLuongTon >= 10;
+                    return matchesKeyword && matchesCategory && matchesStock;
+                });
+
+                switch (sortSelect.value) {
+                    case "price-asc":
+                        filtered.sort((a, b) => a.giaThapNhat - b.giaThapNhat);
+                        break;
+                    case "price-desc":
+                        filtered.sort((a, b) => b.giaThapNhat - a.giaThapNhat);
+                        break;
+                    case "stock-desc":
+                        filtered.sort((a, b) => b.tongSoLuongTon - a.tongSoLuongTon);
+                        break;
+                    case "name-asc":
+                        filtered.sort((a, b) => a.ten.localeCompare(b.ten, "vi"));
+                        break;
+                    default:
+                        filtered.sort((a, b) => b.tongSoLuongTon - a.tongSoLuongTon);
+                        break;
+                }
+
+                resultSummary.textContent = `Hiển thị ${filtered.length} sản phẩm${keyword ? ` cho từ khóa "${keyword}"` : ""}.`;
+                catalogGrid.innerHTML = filtered.length
+                    ? filtered.map(window.winterStore.renderProductCard).join("")
+                    : '<div class="empty-state">Không có sản phẩm phù hợp bộ lọc hiện tại.</div>';
+            }
+
+            searchInput.addEventListener("input", function () {
+                syncSearch(searchInput.value);
+                applyFilters();
+            });
+
+            mobileSearchInput.addEventListener("input", function () {
+                syncSearch(mobileSearchInput.value);
+                applyFilters();
+            });
+
+            sortSelect.addEventListener("change", applyFilters);
+
+            categoryChips.addEventListener("click", function (event) {
+                const button = event.target.closest("[data-category]");
+                if (!button) {
+                    return;
+                }
+
+                selectedCategory = button.dataset.category;
+                renderCategories(products);
+                applyFilters();
+            });
+
+            stockToggle.addEventListener("click", function () {
+                stockOnly = !stockOnly;
+                stockToggle.classList.toggle("active", stockOnly);
+                stockToggle.textContent = stockOnly ? "Đang lọc: còn nhiều hàng" : "Chỉ hiện còn nhiều hàng";
+                applyFilters();
+            });
+
+            try {
+                products = await window.winterStore.fetchProducts();
+                renderCategories(products);
+                applyFilters();
+            } catch (error) {
+                console.error(error);
+                resultSummary.textContent = "Lỗi tải dữ liệu.";
+                catalogGrid.innerHTML = '<div class="empty-state">Không thể tải catalog sản phẩm.</div>';
+            }
+        });
+    </script>
+}

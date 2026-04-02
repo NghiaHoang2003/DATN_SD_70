@@ -2,173 +2,155 @@
     ViewData["Title"] = "Thanh toán";
 }
 
-<h3 class="fw-bold mb-4 mt-4">Thông tin giao hàng</h3>
+<section class="checkout-shell">
+    <div class="page-head">
+        <div>
+            <span class="page-tag">Checkout</span>
+            <h1 class="page-title">Hoàn tất đơn hàng</h1>
+            <p class="page-copy">Điền thông tin nhận hàng để hoàn tất đơn mua sắm của bạn một cách nhanh chóng và thuận tiện.</p>
+        </div>
+    </div>
 
-<div class="row g-4">
-    <div class="col-lg-7">
-        <div class="card border-0 shadow-sm rounded-4 p-4">
-            <form>
-                <div class="row g-3">
-                    <div class="col-12">
-                        <label class="form-label fw-bold">Họ và tên người nhận</label>
-                        <input id="customerName" type="text" class="form-control form-control-lg rounded-3" placeholder="Nhập họ tên đầy đủ">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold">Số điện thoại</label>
-                        <input id="customerPhone" type="tel" class="form-control form-control-lg rounded-3" placeholder="09xx xxx xxx">
-                        <small id="phoneHelp" class="text-muted">Ví dụ: 0912345678 hoặc +84912345678</small>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold">Email</label>
-                        <input id="customerEmail" type="email" class="form-control form-control-lg rounded-3" placeholder="email@example.com">
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label fw-bold">Địa chỉ nhận hàng</label>
-                        <input id="customerAddress" type="text" class="form-control form-control-lg rounded-3" placeholder="Số nhà, đường, phường/xã, quận/huyện...">
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label fw-bold">Ghi chú (Tùy chọn)</label>
-                        <textarea class="form-control rounded-3" rows="2" placeholder="Ghi chú thêm về thời gian giao hàng..."></textarea>
-                    </div>
-
-                    <h5 class="fw-bold mt-4 mb-2">Phương thức thanh toán</h5>
-                    <div class="col-12">
-                        <div class="form-check p-3 border rounded-3 mb-2 bg-light">
-                            <input class="form-check-input ms-1" type="radio" name="payment" id="cod" checked>
-                            <label class="form-check-label ms-2 fw-bold" for="cod">
-                                Thanh toán khi nhận hàng (COD)
-                            </label>
-                        </div>
-                        <div class="form-check p-3 border rounded-3">
-                            <input class="form-check-input ms-1" type="radio" name="payment" id="bank">
-                            <label class="form-check-label ms-2 fw-bold" for="bank">
-                                Chuyển khoản ngân hàng
-                            </label>
-                        </div>
-                    </div>
+    <div class="checkout-layout">
+        <div class="checkout-panel">
+            <h4>Thông tin giao hàng</h4>
+            <div class="checkout-form-grid">
+                <div class="full">
+                    <label class="control-label" for="customerName">Họ và tên người nhận</label>
+                    <input id="customerName" type="text" class="store-input" placeholder="Nguyễn Văn A" />
                 </div>
-                <button id="btnPlaceOrder" type="button" class="btn btn-success btn-lg w-100 mt-4 fw-bold py-3 rounded-pill shadow">ĐẶT HÀNG NGAY</button>
-            </form>
-        </div>
-    </div>
+                <div>
+                    <label class="control-label" for="customerPhone">Số điện thoại</label>
+                    <input id="customerPhone" type="tel" class="store-input" placeholder="0912345678" />
+                </div>
+                <div>
+                    <label class="control-label" for="customerEmail">Email</label>
+                    <input id="customerEmail" type="email" class="store-input" placeholder="email@example.com" />
+                </div>
+                <div class="full">
+                    <label class="control-label" for="customerAddress">Địa chỉ nhận hàng</label>
+                    <input id="customerAddress" type="text" class="store-input" placeholder="Số nhà, đường, phường/xã, quận/huyện..." />
+                </div>
+                <div class="full">
+                    <label class="control-label" for="customerNote">Ghi chú</label>
+                    <textarea id="customerNote" class="store-textarea" rows="3" placeholder="Ví dụ: giao giờ hành chính..."></textarea>
+                </div>
+            </div>
 
-    <div class="col-lg-5">
-        <div class="card border-0 shadow-sm rounded-4 bg-light p-4">
-            <h5 id="checkoutItemCount" class="fw-bold mb-4">Đơn hàng của bạn (0)</h5>
+            <h4 class="mt-4">Phương thức thanh toán</h4>
+            <div class="payment-options">
+                <label class="payment-option">
+                    <input type="radio" name="paymentMethod" value="cod" checked />
+                    <span>
+                        <strong>Thanh toán khi nhận hàng</strong>
+                        <span>Linh hoạt và thuận tiện khi nhận hàng tại nhà.</span>
+                    </span>
+                </label>
+                <label class="payment-option">
+                    <input type="radio" name="paymentMethod" value="bank" />
+                    <span>
+                        <strong>Chuyển khoản ngân hàng</strong>
+                        <span>Nhanh gọn cho những đơn hàng cần xác nhận sớm.</span>
+                    </span>
+                </label>
+            </div>
+
+            <button id="btnPlaceOrder" type="button" class="btn btn-brand checkout-submit">Đặt hàng ngay</button>
+            <div class="confirmation-panel">
+                Đơn hàng của bạn sẽ được xác nhận ngay sau khi hoàn tất thông tin thanh toán.
+            </div>
+        </div>
+
+        <aside class="summary-panel">
+            <h4>Đơn hàng của bạn</h4>
             <div id="checkoutItems"></div>
-
-            <hr class="text-muted">
-
-            <div class="d-flex justify-content-between mb-2 text-muted">
-                <span>Tạm tính</span>
-                <span id="checkoutSubtotal">0 đ</span>
+            <div class="summary-list mt-3">
+                <div class="summary-row">
+                    <span>Tổng số lượng</span>
+                    <strong id="checkoutItemCount">0</strong>
+                </div>
+                <div class="summary-row">
+                    <span>Tạm tính</span>
+                    <strong id="checkoutSubtotal">0 đ</strong>
+                </div>
+                <div class="summary-row summary-total">
+                    <span>Tổng thanh toán</span>
+                    <span id="checkoutTotal">0 đ</span>
+                </div>
             </div>
-            <div class="d-flex justify-content-between mb-3 text-muted">
-                <span>Phí vận chuyển</span>
-                <span>0 đ</span>
-            </div>
-            <hr>
-            <div class="d-flex justify-content-between fs-5">
-                <span class="fw-bold">Tổng thanh toán:</span>
-                <span id="checkoutTotal" class="fw-bold text-danger">0 đ</span>
-            </div>
-        </div>
+        </aside>
     </div>
-</div>
+</section>
 
 @section Scripts {
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            const btnPlaceOrder = document.getElementById('btnPlaceOrder');
-            const checkoutItems = document.getElementById('checkoutItems');
-            const checkoutItemCount = document.getElementById('checkoutItemCount');
-            const checkoutSubtotal = document.getElementById('checkoutSubtotal');
-            const checkoutTotal = document.getElementById('checkoutTotal');
-            const customerName = document.getElementById('customerName');
-            const customerPhone = document.getElementById('customerPhone');
-            const customerAddress = document.getElementById('customerAddress');
-            const phoneHelp = document.getElementById('phoneHelp');
-
-            function setPhoneError(message) {
-                customerPhone.classList.add('is-invalid');
-                phoneHelp.className = 'text-danger';
-                phoneHelp.textContent = message;
-            }
-
-            function clearPhoneError() {
-                customerPhone.classList.remove('is-invalid');
-                phoneHelp.className = 'text-muted';
-                phoneHelp.textContent = 'Ví dụ: 0912345678 hoặc +84912345678';
-            }
-
-            function validateCheckoutForm() {
-                if (!customerName.value.trim() || !customerAddress.value.trim()) {
-                    window.winterCart.showToast("Vui lòng điền đầy đủ thông tin giao hàng.", "warning");
-                    return false;
-                }
-
-                if (!window.winterCart.isValidPhoneNumber(customerPhone.value)) {
-                    setPhoneError('Số điện thoại không đúng định dạng.');
-                    window.winterCart.showToast("Số điện thoại không hợp lệ.", "warning");
-                    return false;
-                }
-
-                clearPhoneError();
-                return true;
-            }
+            const btnPlaceOrder = document.getElementById("btnPlaceOrder");
+            const checkoutItems = document.getElementById("checkoutItems");
+            const checkoutItemCount = document.getElementById("checkoutItemCount");
+            const checkoutSubtotal = document.getElementById("checkoutSubtotal");
+            const checkoutTotal = document.getElementById("checkoutTotal");
+            const customerName = document.getElementById("customerName");
+            const customerPhone = document.getElementById("customerPhone");
+            const customerAddress = document.getElementById("customerAddress");
 
             function renderCheckoutSummary() {
                 const cart = window.winterCart.getCart();
-
-                if (cart.length === 0) {
-                    window.winterCart.showToast("Giỏ hàng của bạn đang trống.", "warning");
-                    window.location.href = '/Home/Cart';
+                if (!cart.length) {
+                    window.location.href = "/Home/Cart";
                     return [];
                 }
 
-                checkoutItemCount.textContent = `Đơn hàng của bạn (${window.winterCart.getTotalQuantity(cart)})`;
+                checkoutItemCount.textContent = window.winterCart.getTotalQuantity(cart);
                 checkoutSubtotal.textContent = window.winterCart.formatCurrency(window.winterCart.getSubtotal(cart));
                 checkoutTotal.textContent = window.winterCart.formatCurrency(window.winterCart.getSubtotal(cart));
 
                 checkoutItems.innerHTML = cart.map(item => `
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div class="d-flex align-items-center">
-                            <img src="https://placehold.co/50x60/e9ecef/495057?text=${encodeURIComponent(item.tenSanPham)}" class="rounded me-3" alt="${item.tenSanPham}">
-                            <div>
-                                <h6 class="mb-0 fw-bold">${item.tenSanPham}</h6>
-                                <small class="text-muted">SL: ${item.soLuong} | ${item.phanLoai}</small>
-                            </div>
+                    <article class="checkout-item">
+                        <div class="thumb-wrap">
+                            ${window.winterStore.buildArtwork({ sanPhamID: item.sanPhamID }, "card")}
                         </div>
-                        <span class="fw-bold">${window.winterCart.formatCurrency(item.donGia * item.soLuong)}</span>
-                    </div>`).join('');
+                        <div>
+                            <div class="item-name">${window.winterStore.escapeHtml(item.tenSanPham)}</div>
+                            <div class="item-meta">${window.winterStore.escapeHtml(item.phanLoai)} · SL ${item.soLuong}</div>
+                        </div>
+                        <strong class="price-amount">${window.winterCart.formatCurrency(item.donGia * item.soLuong)}</strong>
+                    </article>
+                `).join("");
 
                 return cart;
             }
 
-            customerPhone.addEventListener('input', function () {
-                if (window.winterCart.isValidPhoneNumber(customerPhone.value)) {
-                    clearPhoneError();
+            function validateForm() {
+                const validPhone = window.winterCart.isValidPhoneNumber(customerPhone.value);
+                customerPhone.classList.toggle("is-invalid", !validPhone);
+                customerName.classList.toggle("is-invalid", !customerName.value.trim());
+                customerAddress.classList.toggle("is-invalid", !customerAddress.value.trim());
+
+                if (!customerName.value.trim() || !customerAddress.value.trim()) {
+                    window.winterCart.showToast("Vui lòng nhập đủ thông tin nhận hàng.", "warning");
+                    return false;
                 }
-            });
+
+                if (!validPhone) {
+                    window.winterCart.showToast("Số điện thoại không hợp lệ.", "warning");
+                    return false;
+                }
+
+                return true;
+            }
 
             renderCheckoutSummary();
 
-            btnPlaceOrder.addEventListener('click', async function () {
+            btnPlaceOrder.addEventListener("click", async function () {
                 const cart = window.winterCart.getCart();
-
-                if (cart.length === 0) {
-                    window.winterCart.showToast("Giỏ hàng của bạn đang trống.", "warning");
-                    window.location.href = '/Home/Cart';
-                    return;
-                }
-
-                if (!validateCheckoutForm()) {
+                if (!cart.length || !validateForm()) {
                     return;
                 }
 
                 const requestData = {
                     tenKhachHang: customerName.value.trim(),
-                    soDienThoai: customerPhone.value.replace(/\s+/g, ''),
+                    soDienThoai: customerPhone.value.replace(/\s+/g, ""),
                     diaChiGiaoHang: customerAddress.value.trim(),
                     items: cart.map(item => ({
                         chiTietSanPhamID: item.chiTietSanPhamID,
@@ -177,35 +159,33 @@
                 };
 
                 try {
-                    btnPlaceOrder.innerText = "Đang xử lý...";
                     btnPlaceOrder.disabled = true;
+                    btnPlaceOrder.textContent = "Đang xử lý...";
 
-                    const response = await fetch('/api/orders', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
+                    const response = await fetch("/api/orders", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
                         body: JSON.stringify(requestData)
                     });
 
-                    if (response.ok) {
-                        const result = await response.json();
-                        window.winterCart.clear();
-                        window.winterCart.showToast(`Đặt hàng thành công. Mã đơn: ${result.hoaDonID}`, "success");
-                        setTimeout(function () {
-                            window.location.href = '/';
-                        }, 900);
+                    if (!response.ok) {
+                        const error = await response.json();
+                        window.winterCart.showToast(error.message || "Không thể tạo đơn hàng.", "danger");
                         return;
                     }
 
-                    const error = await response.json();
-                    window.winterCart.showToast(error.message || "Kiểm tra lại dữ liệu nhập.", "danger");
+                    const result = await response.json();
+                    window.winterCart.clear();
+                    window.winterCart.showToast(`Đặt hàng thành công. Mã đơn: ${result.hoaDonID}`, "success");
+                    setTimeout(function () {
+                        window.location.href = "/";
+                    }, 1200);
                 } catch (error) {
-                    console.error("Lỗi khi gọi API:", error);
-                    window.winterCart.showToast("Lỗi kết nối đến máy chủ.", "danger");
+                    console.error(error);
+                    window.winterCart.showToast("Không thể kết nối tới máy chủ.", "danger");
                 } finally {
-                    btnPlaceOrder.innerText = "ĐẶT HÀNG NGAY";
                     btnPlaceOrder.disabled = false;
+                    btnPlaceOrder.textContent = "Đặt hàng ngay";
                 }
             });
         });
