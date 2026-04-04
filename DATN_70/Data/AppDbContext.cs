@@ -38,117 +38,76 @@ namespace DATN_70.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-            // --- 1. Cấu hình Khóa chính phức hợp cho bảng trung gian ---
-            modelBuilder.Entity<KhuyenMaiSanPham>()
-                .HasKey(ks => new { ks.KhuyenMaiID, ks.SanPhamID });
+            // Legacy schema chỉ có các bảng sản phẩm/đơn hàng tối thiểu.
+            // Những entity chưa có bảng/cột tương ứng trong DB legacy sẽ bị bỏ qua.
+            modelBuilder.Ignore<TaiKhoan>();
+            modelBuilder.Ignore<VaiTro>();
+            modelBuilder.Ignore<KhachHang>();
+            modelBuilder.Ignore<NhanVien>();
+            modelBuilder.Ignore<DiaChi>();
+            modelBuilder.Ignore<DanhMuc>();
+            modelBuilder.Ignore<ThuongHieu>();
+            modelBuilder.Ignore<GioHang>();
+            modelBuilder.Ignore<ChiTietGioHang>();
+            modelBuilder.Ignore<KhuyenMai>();
+            modelBuilder.Ignore<KhuyenMaiSanPham>();
+            modelBuilder.Ignore<PhuongThucThanhToan>();
+            modelBuilder.Ignore<ChiTietThanhToan>();
+            modelBuilder.Ignore<HoaDon>();
+            modelBuilder.Ignore<HoaDonChiTiet>();
 
-            // --- 2. Cấu hình Quan hệ 1-1 (One-to-One) ---
+            modelBuilder.Entity<KichCo>(entity =>
+            {
+                entity.ToTable("KichCo");
+                entity.HasKey(x => x.KichCoID);
+                entity.Ignore(x => x.MoTa);
+            });
 
-            // TaiKhoan <-> KhachHang
-            modelBuilder.Entity<TaiKhoan>()
-                .HasOne(tk => tk.KhachHang)
-                .WithOne(kh => kh.TaiKhoan)
-                .HasForeignKey<KhachHang>(kh => kh.TaiKhoanID);
+            modelBuilder.Entity<Mau>(entity =>
+            {
+                entity.ToTable("Mau");
+                entity.HasKey(x => x.MauID);
+            });
 
-            // TaiKhoan <-> NhanVien
-            modelBuilder.Entity<TaiKhoan>()
-                .HasOne(tk => tk.NhanVien)
-                .WithOne(nv => nv.TaiKhoan)
-                .HasForeignKey<NhanVien>(nv => nv.TaiKhoanID);
+            modelBuilder.Entity<SanPham>(entity =>
+            {
+                entity.ToTable("SanPham");
+                entity.HasKey(x => x.SanPhamID);
 
-            // TaiKhoan <-> GioHang
-            modelBuilder.Entity<TaiKhoan>()
-                .HasOne(tk => tk.GioHang)
-                .WithOne(gh => gh.TaiKhoan)
-                .HasForeignKey<GioHang>(gh => gh.TaiKhoanID);
+                entity.Ignore(x => x.MucVAT);
+                entity.Ignore(x => x.ChatLieu);
+                entity.Ignore(x => x.ThuongHieuID);
+                entity.Ignore(x => x.DanhMucID);
+                entity.Ignore(x => x.ThuongHieu);
+                entity.Ignore(x => x.DanhMuc);
+                entity.Ignore(x => x.KhuyenMaiSanPhams);
+            });
 
-            // --- 3. Cấu hình Quan hệ 1-N (One-to-Many) & Hạn chế xóa (Restrict) ---
+            modelBuilder.Entity<ChiTietSanPham>(entity =>
+            {
+                entity.ToTable("ChiTietSanPham");
+                entity.HasKey(x => x.ChiTietSanPhamID);
 
-            // VaiTro -> TaiKhoan
-            modelBuilder.Entity<TaiKhoan>()
-                .HasOne(tk => tk.VaiTro)
-                .WithMany(v => v.TaiKhoans)
-                .HasForeignKey(tk => tk.VaiTroID);
+                entity.Property(x => x.SoLuongTonKho)
+                    .HasColumnName("SoLuongTon");
 
-            // DanhMuc -> SanPham
-            modelBuilder.Entity<SanPham>()
-                .HasOne(s => s.DanhMuc)
-                .WithMany(d => d.SanPhams)
-                .HasForeignKey(s => s.DanhMucID);
+                entity.HasOne(x => x.SanPham)
+                    .WithMany(x => x.ChiTietSanPhams)
+                    .HasForeignKey(x => x.SanPhamID);
 
-            // ThuongHieu -> SanPham
-            modelBuilder.Entity<SanPham>()
-                .HasOne(s => s.ThuongHieu)
-                .WithMany(t => t.SanPhams)
-                .HasForeignKey(s => s.ThuongHieuID);
+                entity.HasOne(x => x.KichCo)
+                    .WithMany(x => x.ChiTietSanPhams)
+                    .HasForeignKey(x => x.KichCoID);
 
-            // SanPham -> ChiTietSanPham
-            modelBuilder.Entity<ChiTietSanPham>()
-                .HasOne(ct => ct.SanPham)
-                .WithMany(s => s.ChiTietSanPhams)
-                .HasForeignKey(ct => ct.SanPhamID);
+                entity.HasOne(x => x.Mau)
+                    .WithMany(x => x.ChiTietSanPhams)
+                    .HasForeignKey(x => x.MauID);
 
-            // KichCo/Mau -> ChiTietSanPham
-            modelBuilder.Entity<ChiTietSanPham>()
-                .HasOne(ct => ct.KichCo)
-                .WithMany(k => k.ChiTietSanPhams)
-                .HasForeignKey(ct => ct.KichCoID);
+                entity.Ignore(x => x.HoaDonChiTiets);
+                entity.Ignore(x => x.ChiTietGioHangs);
+            });
 
-            modelBuilder.Entity<ChiTietSanPham>()
-                .HasOne(ct => ct.Mau)
-                .WithMany(k => k.ChiTietSanPhams)
-                .HasForeignKey(ct => ct.MauID);
-
-            // --- 4. Cấu hình Đơn hàng (Hội tụ nhiều quan hệ) ---
-
-            // KhachHang -> HoaDon
-            modelBuilder.Entity<HoaDon>()
-                .HasOne(h => h.KhachHang)
-                .WithMany(kh => kh.HoaDons)
-                .HasForeignKey(h => h.KhachHangID)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            // NhanVien -> HoaDon
-            modelBuilder.Entity<HoaDon>()
-                .HasOne(h => h.NhanVien)
-                .WithMany(nv => nv.HoaDons)
-                .HasForeignKey(h => h.NhanVienID)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            // DiaChi -> HoaDon
-            modelBuilder.Entity<HoaDon>()
-                .HasOne(h => h.DiaChi)
-                .WithMany(dc => dc.HoaDons)
-                .HasForeignKey(h => h.DiaChiID)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            // KhuyenMai -> HoaDon
-            modelBuilder.Entity<HoaDon>()
-                .HasOne(h => h.KhuyenMai)
-                .WithMany(km => km.HoaDons)
-                .HasForeignKey(h => h.KhuyenMaiID)
-                .OnDelete(DeleteBehavior.SetNull); // Nếu xóa KM, hóa đơn vẫn giữ lại
-
-            // --- 5. Cấu hình Chi tiết (Giỏ hàng & Hóa đơn) ---
-
-            modelBuilder.Entity<ChiTietGioHang>()
-                .HasOne(ct => ct.GioHang)
-                .WithMany(g => g.ChiTietGioHangs)
-                .HasForeignKey(ct => ct.GioHangID);
-
-            modelBuilder.Entity<HoaDonChiTiet>()
-                .HasOne(ct => ct.HoaDon)
-                .WithMany(h => h.HoaDonChiTiets)
-                .HasForeignKey(ct => ct.HoaDonID);
-
-            // --- 6. Cấu hình Thanh toán ---
-
-            modelBuilder.Entity<ChiTietThanhToan>()
-                .HasOne(ct => ct.PhuongThucThanhToan)
-                .WithMany(p => p.ChiTietThanhToans)
-                .HasForeignKey(ct => ct.PhuongThucThanhToanID);
-
-            // --- 7. Cấu hình kiểu dữ liệu Decimal (Chuyên cho tiền tệ) ---
+            // --- Cấu hình kiểu dữ liệu Decimal (Chuyên cho tiền tệ) ---
             foreach (var property in modelBuilder.Model.GetEntityTypes()
                         .SelectMany(t => t.GetProperties())
                         .Where(p => p.ClrType == typeof(decimal) || p.ClrType == typeof(decimal?)))

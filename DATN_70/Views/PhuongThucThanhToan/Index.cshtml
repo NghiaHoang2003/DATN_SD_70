@@ -5,9 +5,9 @@
 <section class="checkout-shell">
     <div class="page-head">
         <div>
-            <span class="page-tag">Checkout</span>
-            <h1 class="page-title">Hoàn tất đơn hàng</h1>
-            <p class="page-copy">Điền thông tin nhận hàng để hoàn tất đơn mua sắm của bạn một cách nhanh chóng và thuận tiện.</p>
+            <span class="page-tag">Thanh toán</span>
+            <h2 class="page-title">Hoàn tất đơn hàng</h2>
+            <p class="page-copy">Nhập thông tin khách hàng và xác nhận thanh toán.</p>
         </div>
     </div>
 
@@ -29,11 +29,11 @@
                 </div>
                 <div class="full">
                     <label class="control-label" for="customerAddress">Địa chỉ nhận hàng</label>
-                    <input id="customerAddress" type="text" class="store-input" placeholder="Số nhà, đường, phường/xã, quận/huyện..." />
+                    <input id="customerAddress" type="text" class="store-input" placeholder="Số nhà, đường, phường xã, quận huyện..." />
                 </div>
                 <div class="full">
                     <label class="control-label" for="customerNote">Ghi chú</label>
-                    <textarea id="customerNote" class="store-textarea" rows="3" placeholder="Ví dụ: giao giờ hành chính..."></textarea>
+                    <textarea id="customerNote" class="store-textarea" rows="3" placeholder="Ghi chú thêm"></textarea>
                 </div>
             </div>
 
@@ -43,22 +43,20 @@
                     <input type="radio" name="paymentMethod" value="cod" checked />
                     <span>
                         <strong>Thanh toán khi nhận hàng</strong>
-                        <span>Linh hoạt và thuận tiện khi nhận hàng tại nhà.</span>
+                        <span>Thanh toán trực tiếp khi nhận hàng.</span>
                     </span>
                 </label>
                 <label class="payment-option">
                     <input type="radio" name="paymentMethod" value="bank" />
                     <span>
                         <strong>Chuyển khoản ngân hàng</strong>
-                        <span>Nhanh gọn cho những đơn hàng cần xác nhận sớm.</span>
+                        <span>Thanh toán qua tài khoản ngân hàng.</span>
                     </span>
                 </label>
             </div>
 
             <button id="btnPlaceOrder" type="button" class="btn btn-brand checkout-submit">Đặt hàng ngay</button>
-            <div class="confirmation-panel">
-                Đơn hàng của bạn sẽ được xác nhận ngay sau khi hoàn tất thông tin thanh toán.
-            </div>
+            <div class="confirmation-panel">Vui lòng kiểm tra lại thông tin trước khi xác nhận đơn hàng.</div>
         </div>
 
         <aside class="summary-panel">
@@ -112,7 +110,7 @@
                         </div>
                         <div>
                             <div class="item-name">${window.winterStore.escapeHtml(item.tenSanPham)}</div>
-                            <div class="item-meta">${window.winterStore.escapeHtml(item.phanLoai)} · SL ${item.soLuong}</div>
+                            <div class="item-meta">${window.winterStore.escapeHtml(item.phanLoai)} - SL ${item.soLuong}</div>
                         </div>
                         <strong class="price-amount">${window.winterCart.formatCurrency(item.donGia * item.soLuong)}</strong>
                     </article>

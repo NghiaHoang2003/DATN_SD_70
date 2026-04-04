@@ -4,35 +4,47 @@
 }
 
 <section class="detail-shell">
+    <div class="page-head">
+        <div>
+            <span class="page-tag">Chi tiết sản phẩm</span>
+            <h2 class="page-title">Thông tin sản phẩm</h2>
+            <p class="page-copy">Xem giá bán, tồn kho và biến thể của sản phẩm.</p>
+        </div>
+        <div class="inline-actions">
+            <a class="btn btn-ghost-dark" asp-controller="Home" asp-action="Products">Quay lại danh sách</a>
+            <a class="btn btn-dark-soft" asp-controller="Home" asp-action="Cart">Mở giỏ hàng</a>
+        </div>
+    </div>
+
     <div class="detail-layout">
         <div class="detail-gallery">
             <div id="detailArtwork" class="loading-state">
                 <div class="spinner-border" role="status"></div>
-                <p class="mt-3 mb-0">Đang tải ảnh mô phỏng sản phẩm...</p>
+                <p class="mt-3 mb-0">Đang tải ảnh sản phẩm...</p>
             </div>
             <div id="detailMiniPills" class="mini-pills"></div>
         </div>
 
         <div class="detail-panel">
             <span id="detailCollection" class="page-tag">Đang tải bộ sưu tập...</span>
-            <h1 id="detailTitle" class="detail-title mt-3">Đang tải sản phẩm</h1>
+            <h1 id="detailTitle" class="detail-title">Đang tải sản phẩm</h1>
             <div id="detailPrice" class="detail-price">0 đ</div>
             <div id="detailStock" class="detail-stock">Đang kiểm tra tồn kho...</div>
             <p id="detailDescription" class="detail-description"></p>
 
             <div class="detail-benefits">
                 <div class="benefit-item">
-                    <i class="bi bi-shield-check"></i>
+                    <i class="bi bi-check-circle"></i>
                     <div>
                         <strong>Kiểm hàng trước khi nhận</strong>
-                        <div class="panel-copy">Yên tâm kiểm tra sản phẩm trước khi thanh toán.</div>
+                        <div class="panel-copy">Áp dụng cho đơn hàng giao tận nơi.</div>
                     </div>
                 </div>
                 <div class="benefit-item">
                     <i class="bi bi-arrow-repeat"></i>
                     <div>
-                        <strong>Đổi size nhanh trong 7 ngày</strong>
-                        <div class="panel-copy">Hỗ trợ đổi size nếu cần để bạn mặc vừa vặn hơn.</div>
+                        <strong>Đổi size trong 7 ngày</strong>
+                        <div class="panel-copy">Hỗ trợ đổi size theo tình trạng sản phẩm.</div>
                     </div>
                 </div>
             </div>
@@ -48,14 +60,14 @@
                     <input id="quantityInput" type="number" class="store-input" min="1" step="1" value="1" />
                 </div>
                 <div>
-                    <label class="control-label">Mô tả nhanh</label>
-                    <div id="variantHint" class="benefit-chip">Chọn một biến thể để xem chi tiết màu và size.</div>
+                    <label class="control-label">Phân loại</label>
+                    <div id="variantHint" class="benefit-chip">Chọn một biến thể.</div>
                 </div>
             </div>
 
             <div class="detail-actions">
                 <button id="addToCartButton" type="button" class="btn btn-brand">Thêm vào giỏ hàng</button>
-                <a class="btn btn-ghost-dark" asp-controller="Home" asp-action="Products">Quay lại catalog</a>
+                <a class="btn btn-ghost-dark" asp-controller="Home" asp-action="Checkout">Đi tới thanh toán</a>
             </div>
         </div>
     </div>
@@ -84,13 +96,13 @@
                 if (!selectedVariant) {
                     detailPrice.textContent = "Liên hệ";
                     detailStock.textContent = "Chưa có biến thể khả dụng.";
-                    variantHint.textContent = "Vui lòng chọn biến thể phù hợp.";
+                    variantHint.textContent = "Vui lòng chọn biến thể.";
                     return;
                 }
 
                 detailPrice.textContent = window.winterCart.formatCurrency(selectedVariant.giaNiemYet);
                 detailStock.textContent = `Tồn kho hiện tại: ${selectedVariant.soLuongTon} sản phẩm.`;
-                variantHint.textContent = `Màu ${selectedVariant.tenMau} · ${selectedVariant.tenKichCo}`;
+                variantHint.textContent = `Màu ${selectedVariant.tenMau} - ${selectedVariant.tenKichCo}`;
                 quantityInput.max = Math.max(selectedVariant.soLuongTon, 1);
 
                 if (Number(quantityInput.value) > selectedVariant.soLuongTon && selectedVariant.soLuongTon > 0) {
@@ -117,7 +129,7 @@
                 `;
                 detailCollection.textContent = product.meta.collection;
                 detailTitle.textContent = product.ten;
-                detailDescription.textContent = product.moTa || "Thiết kế mùa đông hiện đại, dễ phối và phù hợp cho nhiều ngữ cảnh mặc khác nhau.";
+                detailDescription.textContent = product.moTa || "Sản phẩm mùa đông dành cho nhu cầu mặc hằng ngày.";
 
                 if (!Array.isArray(product.bienThe) || product.bienThe.length === 0) {
                     variantGrid.innerHTML = '<div class="empty-state">Sản phẩm hiện chưa có biến thể để bán.</div>';
@@ -131,7 +143,7 @@
                     <button type="button" class="variant-card${variant.chiTietSanPhamID === selectedVariant.chiTietSanPhamID ? " active" : ""}" data-id="${variant.chiTietSanPhamID}">
                         <strong>${window.winterStore.escapeHtml(variant.tenMau)}</strong>
                         <div>${window.winterStore.escapeHtml(variant.tenKichCo)}</div>
-                        <small>${window.winterCart.formatCurrency(variant.giaNiemYet)} · Tồn ${variant.soLuongTon}</small>
+                        <small>${window.winterCart.formatCurrency(variant.giaNiemYet)} - Tồn ${variant.soLuongTon}</small>
                     </button>
                 `).join("");
 
@@ -175,7 +187,7 @@
                     sanPhamID: product.sanPhamID,
                     chiTietSanPhamID: selectedVariant.chiTietSanPhamID,
                     tenSanPham: product.ten,
-                    phanLoai: `${selectedVariant.tenMau} · ${selectedVariant.tenKichCo}`,
+                    phanLoai: `${selectedVariant.tenMau} - ${selectedVariant.tenKichCo}`,
                     soLuong: quantity,
                     donGia: selectedVariant.giaNiemYet
                 });

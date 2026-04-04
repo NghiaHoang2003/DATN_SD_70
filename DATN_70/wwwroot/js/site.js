@@ -1,12 +1,12 @@
 (function () {
     const storageKey = "winterCart";
     const productMetaMap = {
-        SP0001: { collection: "Arctic Edit", category: "Outerwear", badge: "Best seller", tagline: "Giữ ấm sâu, phom hiện đại", toneA: "#c8d5df", toneB: "#6c8295", style: "jacket" },
-        SP0002: { collection: "City Luxe", category: "Leather", badge: "New drop", tagline: "Thanh lịch cho những buổi tối lạnh", toneA: "#d8c0ad", toneB: "#6d4639", style: "jacket" },
-        SP0003: { collection: "Soft Layer", category: "Knitwear", badge: "Cozy fit", tagline: "Mềm nhẹ, dễ layer mỗi ngày", toneA: "#efe4d5", toneB: "#a68d76", style: "sweater" },
-        SP0004: { collection: "Tailored Warmth", category: "Coat", badge: "Premium", tagline: "Phom coat sang và tối giản", toneA: "#d7d1cb", toneB: "#5d6873", style: "coat" },
-        SP0005: { collection: "Street Comfort", category: "Hoodie", badge: "Daily wear", tagline: "Ấm áp, trẻ và dễ phối", toneA: "#cad8c4", toneB: "#5f7757", style: "hoodie" },
-        SP0006: { collection: "Urban Layer", category: "Vest", badge: "Hot pick", tagline: "Gọn nhẹ cho nhịp sống thành phố", toneA: "#ece2d0", toneB: "#84745f", style: "vest" }
+        SP0001: { collection: "Arctic Edit", category: "Outerwear", badge: "Bán chạy", tagline: "Giữ ấm tốt, phom hiện đại", toneA: "#c8d5df", toneB: "#6c8295", style: "jacket" },
+        SP0002: { collection: "City Luxe", category: "Leather", badge: "Mới", tagline: "Thanh lịch cho ngày lạnh", toneA: "#d8c0ad", toneB: "#6d4639", style: "jacket" },
+        SP0003: { collection: "Soft Layer", category: "Knitwear", badge: "Êm nhẹ", tagline: "Mềm nhẹ, dễ phối hằng ngày", toneA: "#efe4d5", toneB: "#a68d76", style: "sweater" },
+        SP0004: { collection: "Tailored Warmth", category: "Coat", badge: "Cao cấp", tagline: "Phom coat sang và tối giản", toneA: "#d7d1cb", toneB: "#5d6873", style: "coat" },
+        SP0005: { collection: "Street Comfort", category: "Hoodie", badge: "Hằng ngày", tagline: "Ấm áp, trẻ và dễ phối", toneA: "#cad8c4", toneB: "#5f7757", style: "hoodie" },
+        SP0006: { collection: "Urban Layer", category: "Vest", badge: "Nổi bật", tagline: "Gọn nhẹ cho nhịp sống thành phố", toneA: "#ece2d0", toneB: "#84745f", style: "vest" }
     };
 
     function escapeHtml(value) {
@@ -18,7 +18,7 @@
         const styles = ["jacket", "coat", "sweater", "vest"];
         const total = [...String(productId || "SP0000")].reduce((sum, char) => sum + char.charCodeAt(0), 0);
         const picked = palette[total % palette.length];
-        return { collection: "Winter Capsule", category: "Seasonal", badge: "Featured", tagline: "Thiết kế mùa đông tối giản", toneA: picked[0], toneB: picked[1], style: styles[total % styles.length] };
+        return { collection: "Winter Capsule", category: "Seasonal", badge: "Nổi bật", tagline: "Thiết kế mùa đông tối giản", toneA: picked[0], toneB: picked[1], style: styles[total % styles.length] };
     }
 
     function getProductMeta(productOrId) {
@@ -129,6 +129,7 @@
         if (!container || !window.bootstrap) {
             return;
         }
+
         const bgClass = { success: "text-bg-success", danger: "text-bg-danger", warning: "text-bg-warning", info: "text-bg-dark" }[type] || "text-bg-dark";
         const toastElement = document.createElement("div");
         toastElement.className = `toast align-items-center border-0 ${bgClass}`;
@@ -182,7 +183,7 @@
                     <div class="price-line">
                         <div>
                             <div class="price-amount">${formatCurrency(product.giaThapNhat)}</div>
-                            <div class="price-note">${escapeHtml(product.meta.category)} · ${product.tongSoLuongTon} sản phẩm khả dụng</div>
+                            <div class="price-note">${escapeHtml(product.meta.category)} - ${product.tongSoLuongTon} sản phẩm khả dụng</div>
                         </div>
                     </div>
                     <div class="product-actions">
