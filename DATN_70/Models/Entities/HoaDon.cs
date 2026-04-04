@@ -1,4 +1,4 @@
-﻿namespace DATN_70.Models.Entities
+namespace DATN_70.Models.Entities
 {
     public class HoaDon
     {

@@ -1,4 +1,4 @@
-﻿using DATN_70.Models.Entities;
+using DATN_70.Models.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace DATN_70.Data
@@ -7,39 +7,17 @@ namespace DATN_70.Data
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) {}
 
-        // Khai báo các bảng sẽ xuất hiện trong SQL Server
-        // Nhóm Người dùng & Phân quyền
-        public DbSet<TaiKhoan> TaiKhoans { get; set; }
-        public DbSet<VaiTro> VaiTros { get; set; }
-        public DbSet<KhachHang> KhachHangs { get; set; }
-        public DbSet<NhanVien> NhanViens { get; set; }
-        public DbSet<DiaChi> DiaChis { get; set; }
-
-        // Nhóm Sản phẩm
-        public DbSet<SanPham> SanPhams { get; set; }
-        public DbSet<ChiTietSanPham> ChiTietSanPhams { get; set; }
-        public DbSet<DanhMuc> DanhMucs { get; set; }
-        public DbSet<ThuongHieu> ThuongHieus { get; set; }
-        public DbSet<Mau> Maus { get; set; }
-        public DbSet<KichCo> KichCos { get; set; }
-
-        // Nhóm Bán hàng & Giỏ hàng
-        public DbSet<GioHang> GioHangs { get; set; }
-        public DbSet<ChiTietGioHang> ChiTietGioHangs { get; set; }
-        public DbSet<HoaDon> HoaDons { get; set; }
-        public DbSet<HoaDonChiTiet> HoaDonChiTiets { get; set; }
-
-        // Nhóm Khuyến mãi & Thanh toán
-        public DbSet<KhuyenMai> KhuyenMais { get; set; }
-        public DbSet<KhuyenMaiSanPham> KhuyenMaiSanPhams { get; set; }
-        public DbSet<PhuongThucThanhToan> PhuongThucThanhToans { get; set; }
-        public DbSet<ChiTietThanhToan> ChiTietThanhToans { get; set; }
+        public DbSet<SanPham> SanPhams => Set<SanPham>();
+        public DbSet<ChiTietSanPham> ChiTietSanPhams => Set<ChiTietSanPham>();
+        public DbSet<Mau> Maus => Set<Mau>();
+        public DbSet<KichCo> KichCos => Set<KichCo>();
+        public DbSet<StorefrontOrder> StorefrontOrders => Set<StorefrontOrder>();
+        public DbSet<StorefrontOrderItem> StorefrontOrderItems => Set<StorefrontOrderItem>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-            // Legacy schema chỉ có các bảng sản phẩm/đơn hàng tối thiểu.
-            // Những entity chưa có bảng/cột tương ứng trong DB legacy sẽ bị bỏ qua.
+
             modelBuilder.Ignore<TaiKhoan>();
             modelBuilder.Ignore<VaiTro>();
             modelBuilder.Ignore<KhachHang>();
@@ -60,19 +38,29 @@ namespace DATN_70.Data
             {
                 entity.ToTable("KichCo");
                 entity.HasKey(x => x.KichCoID);
-                entity.Ignore(x => x.MoTa);
+
+                entity.Property(x => x.KichCoID).HasMaxLength(450);
+                entity.Property(x => x.Ten).IsRequired();
+                entity.Property(x => x.MoTa).HasDefaultValue(string.Empty);
             });
 
             modelBuilder.Entity<Mau>(entity =>
             {
                 entity.ToTable("Mau");
                 entity.HasKey(x => x.MauID);
+
+                entity.Property(x => x.MauID).HasMaxLength(450);
+                entity.Property(x => x.Ten).IsRequired();
             });
 
             modelBuilder.Entity<SanPham>(entity =>
             {
                 entity.ToTable("SanPham");
                 entity.HasKey(x => x.SanPhamID);
+
+                entity.Property(x => x.SanPhamID).HasMaxLength(450);
+                entity.Property(x => x.Ten).IsRequired();
+                entity.Property(x => x.MoTa).HasDefaultValue(string.Empty);
 
                 entity.Ignore(x => x.MucVAT);
                 entity.Ignore(x => x.ChatLieu);
@@ -88,8 +76,10 @@ namespace DATN_70.Data
                 entity.ToTable("ChiTietSanPham");
                 entity.HasKey(x => x.ChiTietSanPhamID);
 
-                entity.Property(x => x.SoLuongTonKho)
-                    .HasColumnName("SoLuongTon");
+                entity.Property(x => x.ChiTietSanPhamID).HasMaxLength(450);
+                entity.Property(x => x.SoLuongTonKho).HasColumnName("SoLuongTon");
+                entity.Property(x => x.SKU).HasDefaultValue(string.Empty);
+                entity.Property(x => x.GiaNiemYet).HasPrecision(18, 2);
 
                 entity.HasOne(x => x.SanPham)
                     .WithMany(x => x.ChiTietSanPhams)
@@ -107,10 +97,47 @@ namespace DATN_70.Data
                 entity.Ignore(x => x.ChiTietGioHangs);
             });
 
-            // --- Cấu hình kiểu dữ liệu Decimal (Chuyên cho tiền tệ) ---
+            modelBuilder.Entity<StorefrontOrder>(entity =>
+            {
+                entity.ToTable("HoaDon");
+                entity.HasKey(x => x.HoaDonID);
+
+                entity.Property(x => x.HoaDonID).HasMaxLength(450);
+                entity.Property(x => x.TenKhachHang).HasMaxLength(100);
+                entity.Property(x => x.SoDienThoai).HasMaxLength(20);
+                entity.Property(x => x.DiaChiGiaoHang).HasMaxLength(255);
+                entity.Property(x => x.NgayTao).HasDefaultValueSql("SYSUTCDATETIME()");
+                entity.Property(x => x.TongTien).HasPrecision(18, 2);
+                entity.Property(x => x.TrangThai).HasDefaultValue(0);
+
+                entity.HasMany(x => x.ChiTietHoaDon)
+                    .WithOne(x => x.HoaDon)
+                    .HasForeignKey(x => x.HoaDonID);
+            });
+
+            modelBuilder.Entity<StorefrontOrderItem>(entity =>
+            {
+                entity.ToTable("HoaDonChiTiet");
+                entity.HasKey(x => x.HoaDonChiTietID);
+
+                entity.Property(x => x.HoaDonChiTietID).HasMaxLength(450);
+                entity.Property(x => x.HoaDonID).HasMaxLength(450);
+                entity.Property(x => x.ChiTietSanPhamID).HasMaxLength(450);
+                entity.Property(x => x.DonGia).HasPrecision(18, 2);
+                entity.Property(x => x.ThanhTien).HasPrecision(18, 2);
+
+                entity.HasIndex(x => x.HoaDonID);
+                entity.HasIndex(x => x.ChiTietSanPhamID);
+
+                entity.HasOne<ChiTietSanPham>()
+                    .WithMany()
+                    .HasForeignKey(x => x.ChiTietSanPhamID)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
             foreach (var property in modelBuilder.Model.GetEntityTypes()
-                        .SelectMany(t => t.GetProperties())
-                        .Where(p => p.ClrType == typeof(decimal) || p.ClrType == typeof(decimal?)))
+                         .SelectMany(t => t.GetProperties())
+                         .Where(p => p.ClrType == typeof(decimal) || p.ClrType == typeof(decimal?)))
             {
                 property.SetPrecision(18);
                 property.SetScale(2);
