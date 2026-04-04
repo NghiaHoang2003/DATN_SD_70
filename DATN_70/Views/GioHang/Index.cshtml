@@ -5,20 +5,24 @@
 <section class="cart-shell">
     <div class="page-head">
         <div>
-            <span class="page-tag">Shopping Bag</span>
-            <h1 class="page-title">Giỏ hàng của bạn</h1>
-            <p class="page-copy">Người dùng có thể chỉnh số lượng, xóa sản phẩm và theo dõi tổng tiền trước khi sang bước thanh toán.</p>
+            <span class="page-tag">Giỏ hàng</span>
+            <h2 class="page-title">Danh sách sản phẩm đã chọn</h2>
+            <p class="page-copy">Kiểm tra số lượng và tổng tiền trước khi thanh toán.</p>
+        </div>
+        <div class="inline-actions">
+            <a class="btn btn-ghost-dark" asp-controller="Home" asp-action="Products">Thêm sản phẩm</a>
+            <a id="checkoutLinkTop" class="btn btn-brand" asp-controller="Home" asp-action="Checkout">Thanh toán</a>
         </div>
     </div>
 
     <div class="cart-layout">
         <div class="cart-panel">
-            <h4 class="cart-title">Danh sách sản phẩm</h4>
+            <h4>Đơn hàng tạm</h4>
             <div id="cartItemsContainer"></div>
         </div>
 
         <aside class="summary-panel">
-            <h4 class="summary-title">Tóm tắt đơn hàng</h4>
+            <h4>Tóm tắt đơn hàng</h4>
             <div class="summary-list">
                 <div class="summary-row">
                     <span>Tạm tính</span>
@@ -29,7 +33,7 @@
                     <span>Miễn phí</span>
                 </div>
                 <div class="summary-row summary-total">
-                    <span>Tổng cộng</span>
+                    <span>Thành tiền</span>
                     <span id="totalAmount">0 đ</span>
                 </div>
             </div>
@@ -45,12 +49,20 @@
             const subtotalAmount = document.getElementById("subtotalAmount");
             const totalAmount = document.getElementById("totalAmount");
             const checkoutLink = document.getElementById("checkoutLink");
+            const checkoutLinkTop = document.getElementById("checkoutLinkTop");
 
             function syncCheckoutState(cart) {
                 const disabled = cart.length === 0;
-                checkoutLink.classList.toggle("disabled", disabled);
-                checkoutLink.style.pointerEvents = disabled ? "none" : "auto";
-                checkoutLink.style.opacity = disabled ? "0.6" : "1";
+
+                [checkoutLink, checkoutLinkTop].forEach(link => {
+                    if (!link) {
+                        return;
+                    }
+
+                    link.classList.toggle("disabled", disabled);
+                    link.style.pointerEvents = disabled ? "none" : "auto";
+                    link.style.opacity = disabled ? "0.6" : "1";
+                });
             }
 
             function renderCart() {
@@ -63,8 +75,8 @@
                 if (!cart.length) {
                     cartItemsContainer.innerHTML = `
                         <div class="empty-state">
-                            Giỏ hàng đang trống. Hãy thêm vài sản phẩm để test tiếp luồng đặt hàng.
-                            <div class="inline-actions justify-content-center">
+                            Giỏ hàng đang trống.
+                            <div class="inline-actions justify-content-center mt-3">
                                 <a class="btn btn-dark-soft" href="/Home/Products">Mở trang sản phẩm</a>
                             </div>
                         </div>`;
@@ -89,22 +101,28 @@
                 `).join("");
             }
 
-            checkoutLink.addEventListener("click", function (event) {
+            function guardEmptyCart(event) {
                 if (window.winterCart.getCart().length > 0) {
                     return;
                 }
+
                 event.preventDefault();
                 window.winterCart.showToast("Giỏ hàng đang trống.", "warning");
-            });
+            }
+
+            checkoutLink.addEventListener("click", guardEmptyCart);
+            checkoutLinkTop.addEventListener("click", guardEmptyCart);
 
             cartItemsContainer.addEventListener("change", function (event) {
                 if (!event.target.classList.contains("cart-quantity-input")) {
                     return;
                 }
+
                 const quantity = Number.parseInt(event.target.value, 10);
                 if (!Number.isInteger(quantity) || quantity < 1) {
                     event.target.value = 1;
                 }
+
                 window.winterCart.updateQuantity(event.target.dataset.id, event.target.value);
                 renderCart();
             });
@@ -114,6 +132,7 @@
                 if (!button) {
                     return;
                 }
+
                 window.winterCart.removeItem(button.dataset.id);
                 window.winterCart.showToast("Đã xóa sản phẩm khỏi giỏ hàng.", "success");
                 renderCart();
