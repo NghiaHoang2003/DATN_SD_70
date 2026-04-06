@@ -2,144 +2,47 @@
     ViewData["Title"] = "Giỏ hàng";
 }
 
-<section class="cart-shell">
-    <div class="page-head">
-        <div>
-            <span class="page-tag">Giỏ hàng</span>
-            <h2 class="page-title">Danh sách sản phẩm đã chọn</h2>
-            <p class="page-copy">Kiểm tra số lượng và tổng tiền trước khi thanh toán.</p>
-        </div>
-        <div class="inline-actions">
-            <a class="btn btn-ghost-dark" asp-controller="Home" asp-action="Products">Thêm sản phẩm</a>
-            <a id="checkoutLinkTop" class="btn btn-brand" asp-controller="Home" asp-action="Checkout">Thanh toán</a>
-        </div>
-    </div>
-
-    <div class="cart-layout">
-        <div class="cart-panel">
-            <h4>Đơn hàng tạm</h4>
-            <div id="cartItemsContainer"></div>
-        </div>
-
-        <aside class="summary-panel">
-            <h4>Tóm tắt đơn hàng</h4>
-            <div class="summary-list">
-                <div class="summary-row">
-                    <span>Tạm tính</span>
-                    <strong id="subtotalAmount">0 đ</strong>
+<section id="cartPage" class="page-section cart-page">
+    <div class="container">
+        <div class="cart-shell">
+            <div class="cart-main">
+                <div class="cart-head">
+                    <div>
+                        <h1>Giỏ hàng của bạn</h1>
+                        <p>Đang có <span id="cartHeadCount">0</span> sản phẩm trong giỏ hàng.</p>
+                    </div>
                 </div>
-                <div class="summary-row">
-                    <span>Phí vận chuyển</span>
-                    <span>Miễn phí</span>
-                </div>
-                <div class="summary-row summary-total">
-                    <span>Thành tiền</span>
-                    <span id="totalAmount">0 đ</span>
+
+                <div id="cartItemsContainer" class="cart-items"></div>
+
+                <div class="cart-note-panel">
+                    <label class="filter-label" for="cartOrderNote">Ghi chú đơn hàng</label>
+                    <textarea id="cartOrderNote" class="store-textarea" rows="5" placeholder="Ghi chú giao hàng, thời gian nhận hàng hoặc yêu cầu thêm"></textarea>
                 </div>
             </div>
-            <a id="checkoutLink" class="btn btn-brand checkout-submit" asp-controller="Home" asp-action="Checkout">Tiến hành thanh toán</a>
-        </aside>
+
+            <aside class="cart-summary-panel">
+                <h2>Thông tin thanh toán</h2>
+                <div class="summary-list">
+                    <div class="summary-row">
+                        <span>Tạm tính</span>
+                        <strong id="cartSubtotalAmount">0 đ</strong>
+                    </div>
+                    <div class="summary-row">
+                        <span>Giảm giá</span>
+                        <span id="cartDiscountAmount">0 đ</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Tổng tiền</span>
+                        <strong id="cartTotalAmount">0 đ</strong>
+                    </div>
+                </div>
+                <div class="cart-summary-copy">
+                    <p>Phí vận chuyển sẽ được tính ở bước thanh toán.</p>
+                    <p>Giảm số lượng về 0 sẽ yêu cầu xác nhận xoá sản phẩm.</p>
+                </div>
+                <a id="cartCheckoutLink" class="btn btn-dark-soft checkout-submit" asp-controller="Home" asp-action="Checkout">Thanh toán</a>
+            </aside>
+        </div>
     </div>
 </section>
-
-@section Scripts {
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const cartItemsContainer = document.getElementById("cartItemsContainer");
-            const subtotalAmount = document.getElementById("subtotalAmount");
-            const totalAmount = document.getElementById("totalAmount");
-            const checkoutLink = document.getElementById("checkoutLink");
-            const checkoutLinkTop = document.getElementById("checkoutLinkTop");
-
-            function syncCheckoutState(cart) {
-                const disabled = cart.length === 0;
-
-                [checkoutLink, checkoutLinkTop].forEach(link => {
-                    if (!link) {
-                        return;
-                    }
-
-                    link.classList.toggle("disabled", disabled);
-                    link.style.pointerEvents = disabled ? "none" : "auto";
-                    link.style.opacity = disabled ? "0.6" : "1";
-                });
-            }
-
-            function renderCart() {
-                const cart = window.winterCart.getCart();
-                const subtotal = window.winterCart.getSubtotal(cart);
-                subtotalAmount.textContent = window.winterCart.formatCurrency(subtotal);
-                totalAmount.textContent = window.winterCart.formatCurrency(subtotal);
-                syncCheckoutState(cart);
-
-                if (!cart.length) {
-                    cartItemsContainer.innerHTML = `
-                        <div class="empty-state">
-                            Giỏ hàng đang trống.
-                            <div class="inline-actions justify-content-center mt-3">
-                                <a class="btn btn-dark-soft" href="/Home/Products">Mở trang sản phẩm</a>
-                            </div>
-                        </div>`;
-                    return;
-                }
-
-                cartItemsContainer.innerHTML = cart.map(item => `
-                    <article class="cart-item">
-                        <div class="thumb-wrap">
-                            ${window.winterStore.buildArtwork({ sanPhamID: item.sanPhamID }, "card")}
-                        </div>
-                        <div>
-                            <a class="item-name" href="/Home/Details?id=${encodeURIComponent(item.sanPhamID || "")}">${window.winterStore.escapeHtml(item.tenSanPham)}</a>
-                            <div class="item-meta">${window.winterStore.escapeHtml(item.phanLoai)}</div>
-                            <div class="qty-actions">
-                                <input class="store-input qty-input cart-quantity-input" type="number" min="1" step="1" value="${item.soLuong}" data-id="${item.chiTietSanPhamID}" />
-                                <button type="button" class="link-button cart-remove-btn" data-id="${item.chiTietSanPhamID}">Xóa</button>
-                            </div>
-                        </div>
-                        <strong class="price-amount">${window.winterCart.formatCurrency(item.donGia * item.soLuong)}</strong>
-                    </article>
-                `).join("");
-            }
-
-            function guardEmptyCart(event) {
-                if (window.winterCart.getCart().length > 0) {
-                    return;
-                }
-
-                event.preventDefault();
-                window.winterCart.showToast("Giỏ hàng đang trống.", "warning");
-            }
-
-            checkoutLink.addEventListener("click", guardEmptyCart);
-            checkoutLinkTop.addEventListener("click", guardEmptyCart);
-
-            cartItemsContainer.addEventListener("change", function (event) {
-                if (!event.target.classList.contains("cart-quantity-input")) {
-                    return;
-                }
-
-                const quantity = Number.parseInt(event.target.value, 10);
-                if (!Number.isInteger(quantity) || quantity < 1) {
-                    event.target.value = 1;
-                }
-
-                window.winterCart.updateQuantity(event.target.dataset.id, event.target.value);
-                renderCart();
-            });
-
-            cartItemsContainer.addEventListener("click", function (event) {
-                const button = event.target.closest(".cart-remove-btn");
-                if (!button) {
-                    return;
-                }
-
-                window.winterCart.removeItem(button.dataset.id);
-                window.winterCart.showToast("Đã xóa sản phẩm khỏi giỏ hàng.", "success");
-                renderCart();
-            });
-
-            window.addEventListener("winterCartChanged", renderCart);
-            renderCart();
-        });
-    </script>
-}

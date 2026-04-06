@@ -78,7 +78,13 @@ public sealed class StorefrontDataSeeder
             new SanPham { SanPhamID = "SP0003", Ten = "Sweater Alpine Soft Knit", MoTa = "Mau sweater len mem nhe, tay raplan de mac layering ca ngay ma van gon dang." },
             new SanPham { SanPhamID = "SP0004", Ten = "Ao Mangto Wool Blend", MoTa = "Thiet ke mangto dang suong, tong mau tram sang, hop cho outfit cong so va di choi cuoi tuan." },
             new SanPham { SanPhamID = "SP0005", Ten = "Hoodie Fleece Cloudline", MoTa = "Ni fleece day dan, giu am nhanh va cho cam giac thoai mai trong nhung ngay se lanh." },
-            new SanPham { SanPhamID = "SP0006", Ten = "Gile Phao Urban Heat", MoTa = "Gile phao gon nhe, de phoi layer voi hoodie hoac ao len, hop cho di chuyen hang ngay." }
+            new SanPham { SanPhamID = "SP0006", Ten = "Gile Phao Urban Heat", MoTa = "Gile phao gon nhe, de phoi layer voi hoodie hoac ao len, hop cho di chuyen hang ngay." },
+            new SanPham { SanPhamID = "SP0007", Ten = "Ao Khoac Ngan Metro Zip", MoTa = "Ao khoac ngan dang gon, hop voi set do di hoc va di lam trong ngay tro gio." },
+            new SanPham { SanPhamID = "SP0008", Ten = "Ao Len Merino Ease", MoTa = "Ao len mong nhe, giu nhiet vua du va phu hop de mac layer trong moi ngay." },
+            new SanPham { SanPhamID = "SP0009", Ten = "Ao Giu Nhiet Core Warm", MoTa = "Lop ao giu nhiet co gian, om vua co the va mac lot ben trong rat linh hoat." },
+            new SanPham { SanPhamID = "SP0010", Ten = "Parka Snow Ranger", MoTa = "Parka mu long nhan tao, khang gio tot va phu hop cho chuyen di xa ngay lanh." },
+            new SanPham { SanPhamID = "SP0011", Ten = "Cardigan Layer Softline", MoTa = "Cardigan dang mo, chat len mem va de phoi cung thun, so mi hoac ao giu nhiet." },
+            new SanPham { SanPhamID = "SP0012", Ten = "Bomber Frost Street", MoTa = "Bomber dang ngan, phom tre trung, phu hop phong cach pho va di chuyen hang ngay." }
         };
 
         foreach (var item in items)
@@ -113,7 +119,25 @@ public sealed class StorefrontDataSeeder
             NewChiTietSanPham("CT0015", "SP0005", "SZX", "BLK", 720000m, 8),
             NewChiTietSanPham("CT0016", "SP0006", "SZS", "CRM", 890000m, 12),
             NewChiTietSanPham("CT0017", "SP0006", "SZM", "BLK", 890000m, 15),
-            NewChiTietSanPham("CT0018", "SP0006", "SZL", "GRN", 920000m, 9)
+            NewChiTietSanPham("CT0018", "SP0006", "SZL", "GRN", 920000m, 9),
+            NewChiTietSanPham("CT0019", "SP0007", "SZS", "GRY", 990000m, 14),
+            NewChiTietSanPham("CT0020", "SP0007", "SZM", "BLK", 1020000m, 11),
+            NewChiTietSanPham("CT0021", "SP0007", "SZL", "CRM", 1020000m, 8),
+            NewChiTietSanPham("CT0022", "SP0008", "SZS", "CRM", 720000m, 17),
+            NewChiTietSanPham("CT0023", "SP0008", "SZM", "GRN", 720000m, 16),
+            NewChiTietSanPham("CT0024", "SP0008", "SZL", "BRN", 760000m, 10),
+            NewChiTietSanPham("CT0025", "SP0009", "SZS", "BLK", 390000m, 25),
+            NewChiTietSanPham("CT0026", "SP0009", "SZM", "GRY", 390000m, 20),
+            NewChiTietSanPham("CT0027", "SP0009", "SZL", "CRM", 420000m, 18),
+            NewChiTietSanPham("CT0028", "SP0010", "SZM", "GRN", 1590000m, 13),
+            NewChiTietSanPham("CT0029", "SP0010", "SZL", "BLK", 1650000m, 9),
+            NewChiTietSanPham("CT0030", "SP0010", "SZX", "CRM", 1690000m, 6),
+            NewChiTietSanPham("CT0031", "SP0011", "SZS", "CRM", 680000m, 12),
+            NewChiTietSanPham("CT0032", "SP0011", "SZM", "BRN", 720000m, 9),
+            NewChiTietSanPham("CT0033", "SP0011", "SZL", "GRY", 720000m, 11),
+            NewChiTietSanPham("CT0034", "SP0012", "SZM", "BLK", 1090000m, 10),
+            NewChiTietSanPham("CT0035", "SP0012", "SZL", "BRN", 1090000m, 8),
+            NewChiTietSanPham("CT0036", "SP0012", "SZX", "GRY", 1150000m, 5)
         };
 
         foreach (var item in items)
