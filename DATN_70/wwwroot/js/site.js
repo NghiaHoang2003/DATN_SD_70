@@ -1,6 +1,14 @@
 ﻿(function () {
     const cartKey = "winterStoreCartV3";
     const profileKey = "winterStoreProfileV3";
+    const stylePhotos = {
+        parka: { url: "https://images.pexels.com/photos/15246022/pexels-photo-15246022.jpeg?auto=compress&cs=tinysrgb&w=1200", position: "center 14%" },
+        jacket: { url: "https://images.pexels.com/photos/35295619/pexels-photo-35295619.jpeg?auto=compress&cs=tinysrgb&w=1200", position: "center 12%" },
+        coat: { url: "https://images.pexels.com/photos/36211191/pexels-photo-36211191.jpeg?auto=compress&cs=tinysrgb&w=1200", position: "center 10%" },
+        hoodie: { url: "https://images.pexels.com/photos/8346216/pexels-photo-8346216.jpeg?auto=compress&cs=tinysrgb&w=1200", position: "center 10%" },
+        sweater: { url: "https://images.pexels.com/photos/29491953/pexels-photo-29491953.jpeg?auto=compress&cs=tinysrgb&w=1200", position: "center 10%" },
+        vest: { url: "https://images.pexels.com/photos/5303811/pexels-photo-5303811.jpeg?auto=compress&cs=tinysrgb&w=1200", position: "center 12%" }
+    };
     const metaMap = {
         SP0001: { collection: "Arctic Edit", parentCategory: "outerwear", parentLabel: "Áo khoác ngoài", category: "ao-phao", categoryLabel: "Áo phao", badge: "Sale", tagline: "Giữ ấm tốt, phom hiện đại", toneA: "#d8e1ea", toneB: "#7d94a9", style: "parka", popularity: 97, originalFactor: 1.22, icon: "bi-box-seam" },
         SP0002: { collection: "City Luxe", parentCategory: "outerwear", parentLabel: "Áo khoác ngoài", category: "ao-da", categoryLabel: "Áo da", badge: "Mới", tagline: "Thanh lịch cho ngày lạnh", toneA: "#eadbcf", toneB: "#6d4b3f", style: "jacket", popularity: 94, originalFactor: 1.18, icon: "bi-stars" },
@@ -67,9 +75,20 @@
 
     function buildArtwork(product, mode) {
         const meta = getMeta(product);
-        const hoodMarkup = meta.style === "hoodie" ? '<span class="hood"></span>' : "";
+        const photo = stylePhotos[meta.style];
         const modeClass = mode === "large" ? " large" : mode === "compact" ? " compact" : "";
-        return `<div class="product-visual${modeClass}" style="--tone-a:${meta.toneA};--tone-b:${meta.toneB};"><span class="product-badge">${escapeHtml(meta.badge)}</span><span class="visual-shape shape-one"></span><span class="visual-shape shape-two"></span><div class="garment" data-style="${escapeHtml(meta.style)}"><span class="garment-body"></span>${hoodMarkup}<span class="garment-accent"></span></div></div>`;
+        if (photo) {
+            return `<div class="product-visual photo-mode${modeClass}" style="--tone-a:${meta.toneA};--tone-b:${meta.toneB};"><span class="product-badge">${escapeHtml(meta.badge)}</span><span class="visual-shape shape-one"></span><span class="visual-shape shape-two"></span><div class="product-photo-layer"><img class="product-photo" src="${photo.url}" alt="${escapeHtml(product?.ten || meta.categoryLabel)}" loading="lazy" style="object-position:${photo.position};" /></div></div>`;
+        }
+        const hoodMarkup = meta.style === "hoodie" ? '<span class="hood"></span>' : "";
+        const collarMarkup = meta.style === "coat" || meta.style === "jacket" || meta.style === "parka" ? '<span class="garment-collar collar-left"></span><span class="garment-collar collar-right"></span>' : "";
+        const pocketMarkup = meta.style === "sweater"
+            ? ""
+            : '<span class="garment-pocket pocket-left"></span><span class="garment-pocket pocket-right"></span>';
+        const seamMarkup = meta.style === "vest"
+            ? '<span class="garment-placket short"></span>'
+            : '<span class="garment-placket"></span><span class="garment-hem"></span>';
+        return `<div class="product-visual${modeClass}" style="--tone-a:${meta.toneA};--tone-b:${meta.toneB};"><span class="product-badge">${escapeHtml(meta.badge)}</span><span class="visual-shape shape-one"></span><span class="visual-shape shape-two"></span><div class="garment" data-style="${escapeHtml(meta.style)}"><span class="garment-body"></span>${hoodMarkup}${collarMarkup}${seamMarkup}${pocketMarkup}<span class="garment-accent"></span></div></div>`;
     }
 
     function enrichProduct(product) {

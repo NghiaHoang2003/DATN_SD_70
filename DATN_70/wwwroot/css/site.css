@@ -70,6 +70,11 @@ a { color: inherit; text-decoration: none; }
   position: relative;
 }
 
+.nav-item.has-submenu {
+  padding-bottom: 10px;
+  margin-bottom: -10px;
+}
+
 .nav-link {
   min-height: 38px;
   padding: 0 10px;
@@ -92,7 +97,7 @@ a { color: inherit; text-decoration: none; }
 .cart-preview,
 .header-search-panel {
   position: absolute;
-  top: calc(100% + 10px);
+  top: 100%;
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.98);
   box-shadow: var(--shadow);
@@ -114,6 +119,7 @@ a { color: inherit; text-decoration: none; }
 .nav-submenu {
   left: 0;
   min-width: 210px;
+  margin-top: 10px;
   padding: 10px;
   border-radius: 18px;
   display: grid;
@@ -516,17 +522,19 @@ a { color: inherit; text-decoration: none; }
   overflow: hidden;
 }
 
+.product-visual.photo-mode {
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.8), transparent 30%),
+    linear-gradient(160deg, color-mix(in srgb, var(--tone-a) 70%, white 30%), color-mix(in srgb, var(--tone-b) 82%, #d7dde5 18%));
+}
+
 .product-visual.compact { min-height: 118px; border-radius: 16px; }
 .product-visual.large { min-height: 460px; border-radius: 24px; }
 
 .detail-gallery-panel .product-visual.large {
-  display: block;
-}
-
-.product-visual.large .garment {
-  inset: 58px 32px 28px;
-  width: min(72%, 240px);
-  aspect-ratio: 0.76;
+  display: grid;
+  place-items: center;
+  min-height: clamp(480px, 58vw, 700px);
 }
 
 .product-visual.large .shape-one {
@@ -592,6 +600,35 @@ a { color: inherit; text-decoration: none; }
   background: rgba(0, 0, 0, 0.09);
 }
 
+.product-photo-layer {
+  position: absolute;
+  inset: 18px;
+  border-radius: 22px;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.3)),
+    linear-gradient(160deg, rgba(255, 255, 255, 0.4), rgba(124, 146, 170, 0.16));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.44);
+}
+
+.product-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  filter: saturate(0.95) contrast(1.03);
+}
+
+.product-visual.compact .product-photo-layer {
+  inset: 8px;
+  border-radius: 14px;
+}
+
+.product-visual.large .product-photo-layer {
+  inset: 20px;
+  border-radius: 26px;
+}
+
 .garment {
   position: absolute;
   inset: 46px 18px 16px;
@@ -599,6 +636,15 @@ a { color: inherit; text-decoration: none; }
   width: min(72%, 170px);
   aspect-ratio: 0.76;
   filter: drop-shadow(0 18px 24px rgba(17, 24, 39, 0.16));
+}
+
+.product-visual.large .garment {
+  position: relative;
+  inset: auto;
+  margin: 0;
+  width: min(86%, 360px);
+  max-width: 100%;
+  aspect-ratio: 0.82;
 }
 
 .garment::before,
@@ -649,6 +695,11 @@ a { color: inherit; text-decoration: none; }
 
 .garment[data-style="coat"] .garment-body,
 .garment[data-style="parka"] .garment-body { inset: 8% 22% 0; }
+.garment[data-style="coat"] { width: min(92%, 420px); aspect-ratio: 0.92; }
+.garment[data-style="coat"] .garment-body { inset: 10% 16% 0; border-radius: 24% 24% 10% 10%; }
+.garment[data-style="coat"]::before,
+.garment[data-style="coat"]::after { width: 36%; height: 56%; top: 16%; }
+.garment[data-style="coat"] .garment-accent { left: 48.5%; transform: translateX(-50%); width: 12%; height: 74%; border-radius: 999px; }
 .garment[data-style="vest"]::before,
 .garment[data-style="vest"]::after { height: 24%; }
 
@@ -671,6 +722,126 @@ a { color: inherit; text-decoration: none; }
   height: 40%;
   border-radius: 20px;
   background: rgba(31, 41, 55, 0.08);
+}
+
+.garment-placket,
+.garment-hem,
+.garment-pocket,
+.garment-collar {
+  position: absolute;
+  z-index: 2;
+}
+
+.garment-placket {
+  top: 18%;
+  bottom: 8%;
+  left: 50%;
+  width: 4%;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(77, 88, 102, 0.16), rgba(77, 88, 102, 0.28));
+}
+
+.garment-placket.short {
+  top: 20%;
+  bottom: 22%;
+}
+
+.garment-hem {
+  left: 26%;
+  right: 26%;
+  bottom: 2%;
+  height: 7%;
+  border-radius: 0 0 24px 24px;
+  background: rgba(70, 79, 92, 0.1);
+}
+
+.garment-pocket {
+  width: 16%;
+  height: 10%;
+  bottom: 18%;
+  border-radius: 12px;
+  border: 2px solid rgba(77, 88, 102, 0.14);
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.garment-pocket.pocket-left { left: 24%; transform: rotate(-5deg); }
+.garment-pocket.pocket-right { right: 24%; transform: rotate(5deg); }
+
+.garment-collar {
+  top: 8%;
+  width: 20%;
+  height: 14%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(220, 224, 230, 0.95));
+}
+
+.garment-collar.collar-left {
+  left: 30%;
+  clip-path: polygon(0 0, 100% 0, 72% 100%, 12% 72%);
+}
+
+.garment-collar.collar-right {
+  right: 30%;
+  clip-path: polygon(0 0, 100% 0, 88% 72%, 28% 100%);
+}
+
+.garment[data-style="sweater"] .garment-pocket,
+.garment[data-style="sweater"] .garment-collar,
+.garment[data-style="hoodie"] .garment-collar,
+.garment[data-style="vest"] .garment-hem {
+  display: none;
+}
+
+.garment[data-style="hoodie"] .garment-pocket {
+  left: 29%;
+  right: 29%;
+  width: auto;
+  height: 11%;
+  bottom: 15%;
+  border-radius: 18px;
+  transform: none;
+}
+
+.garment[data-style="hoodie"] .pocket-right {
+  display: none;
+}
+
+.garment[data-style="coat"] .garment-pocket {
+  width: 18%;
+  height: 9%;
+  bottom: 20%;
+}
+
+.garment[data-style="coat"] .garment-hem {
+  left: 22%;
+  right: 22%;
+  bottom: 0;
+  height: 5%;
+}
+
+.garment[data-style="coat"] .garment-placket {
+  top: 14%;
+  bottom: 2%;
+  width: 3%;
+}
+
+.garment[data-style="parka"] .garment-pocket {
+  bottom: 17%;
+  width: 17%;
+}
+
+.garment[data-style="vest"] .garment-pocket {
+  width: 15%;
+  height: 9%;
+  bottom: 24%;
+}
+
+.product-visual.large .garment-placket {
+  width: 3%;
+}
+
+.product-visual.large .garment-pocket {
+  border-width: 3px;
 }
 
 .product-name {
@@ -744,6 +915,7 @@ a { color: inherit; text-decoration: none; }
 .detail-gallery-panel,
 .detail-info-panel {
   min-width: 0;
+  align-self: stretch;
 }
 
 .detail-price-line {

@@ -51,18 +51,23 @@ public sealed class StorefrontDataSeeder
     {
         var items = new[]
         {
-            new Mau { MauID = "BLK", Ten = "Den Onyx" },
+            new Mau { MauID = "BLK", Ten = "Đen Onyx" },
             new Mau { MauID = "CRM", Ten = "Kem Cashmere" },
-            new Mau { MauID = "GRN", Ten = "Xanh Reu" },
-            new Mau { MauID = "BRN", Ten = "Nau Cocoa" },
-            new Mau { MauID = "GRY", Ten = "Ghi Khoi" }
+            new Mau { MauID = "GRN", Ten = "Xanh Rêu" },
+            new Mau { MauID = "BRN", Ten = "Nâu Cocoa" },
+            new Mau { MauID = "GRY", Ten = "Ghi Khói" }
         };
 
         foreach (var item in items)
         {
-            if (!await _dbContext.Maus.AnyAsync(x => x.MauID == item.MauID, cancellationToken))
+            var existing = await _dbContext.Maus.FirstOrDefaultAsync(x => x.MauID == item.MauID, cancellationToken);
+            if (existing is null)
             {
                 _dbContext.Maus.Add(item);
+            }
+            else if (existing.Ten != item.Ten)
+            {
+                existing.Ten = item.Ten;
             }
         }
 
@@ -73,25 +78,31 @@ public sealed class StorefrontDataSeeder
     {
         var items = new[]
         {
-            new SanPham { SanPhamID = "SP0001", Ten = "Ao Phao Arctic Shield", MoTa = "Form dai giu nhiet tot, be mat can gio nhe va phu hop cho nhung ngay lanh sau. Thiet ke toi gian de phoi cung jeans, len va boots." },
-            new SanPham { SanPhamID = "SP0002", Ten = "Ao Da Sherpa Espresso", MoTa = "Chat lieu gia da mem, lot long am ap va tao diem nhan thanh lich cho phong cach thanh pho mua dong." },
-            new SanPham { SanPhamID = "SP0003", Ten = "Sweater Alpine Soft Knit", MoTa = "Mau sweater len mem nhe, tay raplan de mac layering ca ngay ma van gon dang." },
-            new SanPham { SanPhamID = "SP0004", Ten = "Ao Mangto Wool Blend", MoTa = "Thiet ke mangto dang suong, tong mau tram sang, hop cho outfit cong so va di choi cuoi tuan." },
-            new SanPham { SanPhamID = "SP0005", Ten = "Hoodie Fleece Cloudline", MoTa = "Ni fleece day dan, giu am nhanh va cho cam giac thoai mai trong nhung ngay se lanh." },
-            new SanPham { SanPhamID = "SP0006", Ten = "Gile Phao Urban Heat", MoTa = "Gile phao gon nhe, de phoi layer voi hoodie hoac ao len, hop cho di chuyen hang ngay." },
-            new SanPham { SanPhamID = "SP0007", Ten = "Ao Khoac Ngan Metro Zip", MoTa = "Ao khoac ngan dang gon, hop voi set do di hoc va di lam trong ngay tro gio." },
-            new SanPham { SanPhamID = "SP0008", Ten = "Ao Len Merino Ease", MoTa = "Ao len mong nhe, giu nhiet vua du va phu hop de mac layer trong moi ngay." },
-            new SanPham { SanPhamID = "SP0009", Ten = "Ao Giu Nhiet Core Warm", MoTa = "Lop ao giu nhiet co gian, om vua co the va mac lot ben trong rat linh hoat." },
-            new SanPham { SanPhamID = "SP0010", Ten = "Parka Snow Ranger", MoTa = "Parka mu long nhan tao, khang gio tot va phu hop cho chuyen di xa ngay lanh." },
-            new SanPham { SanPhamID = "SP0011", Ten = "Cardigan Layer Softline", MoTa = "Cardigan dang mo, chat len mem va de phoi cung thun, so mi hoac ao giu nhiet." },
-            new SanPham { SanPhamID = "SP0012", Ten = "Bomber Frost Street", MoTa = "Bomber dang ngan, phom tre trung, phu hop phong cach pho va di chuyen hang ngay." }
+            new SanPham { SanPhamID = "SP0001", Ten = "Áo Phao Arctic Shield", MoTa = "Form dài giữ nhiệt tốt, bề mặt cản gió nhẹ và phù hợp cho những ngày lạnh sâu. Thiết kế tối giản để phối cùng jeans, len và boots." },
+            new SanPham { SanPhamID = "SP0002", Ten = "Áo Da Sherpa Espresso", MoTa = "Chất liệu giả da mềm, lót lông ấm áp và tạo điểm nhấn thanh lịch cho phong cách thành phố mùa đông." },
+            new SanPham { SanPhamID = "SP0003", Ten = "Sweater Alpine Soft Knit", MoTa = "Mẫu sweater len mềm nhẹ, tay raglan để mặc layering cả ngày mà vẫn gọn dáng." },
+            new SanPham { SanPhamID = "SP0004", Ten = "Áo Măng Tô Wool Blend", MoTa = "Thiết kế măng tô dáng suông, tông màu trầm sang, hợp cho outfit công sở và đi chơi cuối tuần." },
+            new SanPham { SanPhamID = "SP0005", Ten = "Hoodie Fleece Cloudline", MoTa = "Nỉ fleece dày dặn, giữ ấm nhanh và cho cảm giác thoải mái trong những ngày se lạnh." },
+            new SanPham { SanPhamID = "SP0006", Ten = "Gile Phao Urban Heat", MoTa = "Gile phao gọn nhẹ, dễ phối layer với hoodie hoặc áo len, hợp cho di chuyển hằng ngày." },
+            new SanPham { SanPhamID = "SP0007", Ten = "Áo Khoác Ngắn Metro Zip", MoTa = "Áo khoác ngắn dáng gọn, hợp với set đồ đi học và đi làm trong ngày trở gió." },
+            new SanPham { SanPhamID = "SP0008", Ten = "Áo Len Merino Ease", MoTa = "Áo len mỏng nhẹ, giữ nhiệt vừa đủ và phù hợp để mặc layer trong mọi ngày." },
+            new SanPham { SanPhamID = "SP0009", Ten = "Áo Giữ Nhiệt Core Warm", MoTa = "Lớp áo giữ nhiệt co giãn, ôm vừa cơ thể và mặc lót bên trong rất linh hoạt." },
+            new SanPham { SanPhamID = "SP0010", Ten = "Parka Snow Ranger", MoTa = "Parka mũ lông nhân tạo, kháng gió tốt và phù hợp cho chuyến đi xa ngày lạnh." },
+            new SanPham { SanPhamID = "SP0011", Ten = "Cardigan Layer Softline", MoTa = "Cardigan dáng mở, chất len mềm và dễ phối cùng thun, sơ mi hoặc áo giữ nhiệt." },
+            new SanPham { SanPhamID = "SP0012", Ten = "Bomber Frost Street", MoTa = "Bomber dáng ngắn, phom trẻ trung, phù hợp phong cách phố và di chuyển hằng ngày." }
         };
 
         foreach (var item in items)
         {
-            if (!await _dbContext.SanPhams.AnyAsync(x => x.SanPhamID == item.SanPhamID, cancellationToken))
+            var existing = await _dbContext.SanPhams.FirstOrDefaultAsync(x => x.SanPhamID == item.SanPhamID, cancellationToken);
+            if (existing is null)
             {
                 _dbContext.SanPhams.Add(item);
+            }
+            else
+            {
+                existing.Ten = item.Ten;
+                existing.MoTa = item.MoTa;
             }
         }
 
