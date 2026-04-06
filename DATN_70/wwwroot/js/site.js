@@ -188,11 +188,45 @@
     }
 
     function initHeader(productsPromise) {
+        const bindHoverDropdown = selector => {
+            document.querySelectorAll(selector).forEach(node => {
+                let closeTimer = null;
+                const open = () => {
+                    if (closeTimer) window.clearTimeout(closeTimer);
+                    node.classList.add("is-open");
+                };
+                const close = () => {
+                    if (closeTimer) window.clearTimeout(closeTimer);
+                    closeTimer = window.setTimeout(() => node.classList.remove("is-open"), 140);
+                };
+                node.addEventListener("mouseenter", open);
+                node.addEventListener("mouseleave", close);
+            });
+        };
+
+        bindHoverDropdown(".has-submenu");
+        bindHoverDropdown(".account-menu");
+        bindHoverDropdown(".cart-menu");
+
         const wrapper = document.querySelector(".header-search");
         const toggle = document.getElementById("headerSearchToggle");
         const input = document.getElementById("headerSearchInput");
         if (!wrapper || !toggle || !input) return;
-        toggle.addEventListener("click", () => { wrapper.classList.toggle("is-open"); if (wrapper.classList.contains("is-open")) input.focus(); });
+        let searchCloseTimer = null;
+        const openSearch = () => {
+            if (searchCloseTimer) window.clearTimeout(searchCloseTimer);
+            wrapper.classList.add("is-open");
+        };
+        const closeSearch = () => {
+            if (searchCloseTimer) window.clearTimeout(searchCloseTimer);
+            searchCloseTimer = window.setTimeout(() => wrapper.classList.remove("is-open"), 140);
+        };
+        wrapper.addEventListener("mouseenter", openSearch);
+        wrapper.addEventListener("mouseleave", closeSearch);
+        toggle.addEventListener("click", () => {
+            wrapper.classList.toggle("is-open");
+            if (wrapper.classList.contains("is-open")) input.focus();
+        });
         document.addEventListener("click", event => { if (!wrapper.contains(event.target)) wrapper.classList.remove("is-open"); });
         input.addEventListener("input", async () => setSearchResults(await productsPromise, input.value));
     }
