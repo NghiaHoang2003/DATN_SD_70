@@ -122,7 +122,8 @@
     }
 
     function renderProductCard(product) {
-        return `<article class="product-card">${buildArtwork(product, "card")}<div class="product-info"><div class="price-stack"><span class="sale-badge">-${product.phanTramGiam}%</span><span class="muted-copy">${escapeHtml(product.meta.categoryLabel)}</span></div><a class="product-name" href="/Home/Details?id=${encodeURIComponent(product.sanPhamID)}">${escapeHtml(product.ten)}</a><div class="product-copy">${escapeHtml(product.meta.tagline)}</div><div class="price-stack"><strong class="price-sale">${formatCurrency(product.giaThapNhat)}</strong><span class="price-original">${formatCurrency(product.giaGoc)}</span></div></div></article>`;
+        const detailUrl = `/Home/Details?id=${encodeURIComponent(product.sanPhamID)}`;
+        return `<article class="product-card"><a class="product-card-link" href="${detailUrl}" aria-label="Xem chi tiết ${escapeHtml(product.ten)}">${buildArtwork(product, "card")}<div class="product-info"><div class="price-stack"><span class="sale-badge">-${product.phanTramGiam}%</span><span class="muted-copy">${escapeHtml(product.meta.categoryLabel)}</span></div><span class="product-name">${escapeHtml(product.ten)}</span><div class="product-copy">${escapeHtml(product.meta.tagline)}</div><div class="price-stack"><strong class="price-sale">${formatCurrency(product.giaThapNhat)}</strong><span class="price-original">${formatCurrency(product.giaGoc)}</span></div></div></a></article>`;
     }
 
     function showToast(message, type = "info") {
