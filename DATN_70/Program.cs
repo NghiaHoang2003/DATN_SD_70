@@ -13,6 +13,13 @@ builder.Services.AddScoped<DATN_70.Services.IStoreRepository, DATN_70.Services.S
 
 builder.Services.AddControllersWithViews();
 
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
@@ -23,7 +30,7 @@ using (var scope = app.Services.CreateScope())
     var seeder = scope.ServiceProvider.GetRequiredService<DATN_70.Data.StorefrontDataSeeder>();
     await seeder.SeedAsync();
 }
-
+app.UseSession();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");

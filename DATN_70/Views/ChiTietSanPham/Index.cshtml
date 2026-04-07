@@ -3,197 +3,78 @@
     var productId = ViewData["ProductId"] as string ?? string.Empty;
 }
 
-<section class="detail-shell">
-    <div class="page-head">
-        <div>
-            <span class="page-tag">Chi tiết sản phẩm</span>
-            <h2 class="page-title">Thông tin sản phẩm</h2>
-            <p class="page-copy">Xem giá bán, tồn kho và biến thể của sản phẩm.</p>
-        </div>
-        <div class="inline-actions">
-            <a class="btn btn-ghost-dark" asp-controller="Home" asp-action="Products">Quay lại danh sách</a>
-            <a class="btn btn-dark-soft" asp-controller="Home" asp-action="Cart">Mở giỏ hàng</a>
-        </div>
-    </div>
+<section id="productDetailPage" class="page-section detail-page" data-product-id="@productId">
+    <div class="container">
+        <div class="detail-shell">
+            <div class="detail-main">
+                <div class="detail-gallery-panel">
+                    <div id="detailArtwork" class="detail-artwork loading-state">Đang tải ảnh sản phẩm...</div>
+                    <div id="detailGalleryThumbs" class="detail-thumbs"></div>
+                </div>
 
-    <div class="detail-layout">
-        <div class="detail-gallery">
-            <div id="detailArtwork" class="loading-state">
-                <div class="spinner-border" role="status"></div>
-                <p class="mt-3 mb-0">Đang tải ảnh sản phẩm...</p>
-            </div>
-            <div id="detailMiniPills" class="mini-pills"></div>
-        </div>
+                <div class="detail-info-panel">
+                    <div class="detail-heading">
+                        <div id="detailBreadcrumb" class="detail-breadcrumb">Winter Shop / Sản phẩm</div>
+                        <h1 id="detailTitle">Đang tải sản phẩm...</h1>
+                    </div>
 
-        <div class="detail-panel">
-            <span id="detailCollection" class="page-tag">Đang tải bộ sưu tập...</span>
-            <h1 id="detailTitle" class="detail-title">Đang tải sản phẩm</h1>
-            <div id="detailPrice" class="detail-price">0 đ</div>
-            <div id="detailStock" class="detail-stock">Đang kiểm tra tồn kho...</div>
-            <p id="detailDescription" class="detail-description"></p>
+                    <div class="detail-price-line">
+                        <strong id="detailPrice" class="detail-price">0 đ</strong>
+                        <span id="detailOriginalPrice" class="detail-original-price"></span>
+                        <span id="detailDiscountBadge" class="sale-badge"></span>
+                    </div>
 
-            <div class="detail-benefits">
-                <div class="benefit-item">
-                    <i class="bi bi-check-circle"></i>
-                    <div>
-                        <strong>Kiểm hàng trước khi nhận</strong>
-                        <div class="panel-copy">Áp dụng cho đơn hàng giao tận nơi.</div>
+                    <div id="detailVariantSummary" class="detail-summary-copy">Giá mặc định theo biến thể rẻ nhất khả dụng.</div>
+
+                    <div class="detail-control">
+                        <div class="filter-label">Màu</div>
+                        <div id="detailColorOptions" class="option-grid"></div>
+                    </div>
+
+                    <div class="detail-control">
+                        <div class="filter-label">Kích cỡ</div>
+                        <div id="detailSizeOptions" class="option-grid"></div>
+                    </div>
+
+                    <div class="detail-control quantity-control">
+                        <div>
+                            <div class="filter-label">Số lượng</div>
+                            <div class="quantity-box">
+                                <button id="detailDecreaseQty" type="button">-</button>
+                                <input id="detailQuantityInput" type="number" min="1" step="1" value="1" />
+                                <button id="detailIncreaseQty" type="button">+</button>
+                            </div>
+                        </div>
+                        <div class="stock-note">
+                            <div class="filter-label">Tồn kho</div>
+                            <div id="detailStockNote">Đang kiểm tra...</div>
+                        </div>
+                    </div>
+
+                    <div class="detail-actions">
+                        <button id="detailAddToCart" type="button" class="btn btn-ghost-dark">Thêm vào giỏ hàng</button>
+                        <button id="detailBuyNow" type="button" class="btn btn-dark-soft">Mua ngay</button>
                     </div>
                 </div>
-                <div class="benefit-item">
-                    <i class="bi bi-arrow-repeat"></i>
-                    <div>
-                        <strong>Đổi size trong 7 ngày</strong>
-                        <div class="panel-copy">Hỗ trợ đổi size theo tình trạng sản phẩm.</div>
-                    </div>
-                </div>
             </div>
 
-            <div>
-                <label class="control-label">Chọn biến thể</label>
-                <div id="variantGrid" class="variant-grid"></div>
+            <div class="detail-extra">
+                <div class="detail-tabs">
+                    <button type="button" class="detail-tab active" data-tab="description">Mô tả sản phẩm</button>
+                    <button type="button" class="detail-tab" data-tab="returns">Chính sách đổi trả</button>
+                    <button type="button" class="detail-tab" data-tab="warranty">Chính sách bảo mật</button>
+                </div>
+                <div id="detailTabContent" class="detail-tab-content"></div>
             </div>
 
-            <div class="quantity-row">
-                <div>
-                    <label class="control-label" for="quantityInput">Số lượng</label>
-                    <input id="quantityInput" type="number" class="store-input" min="1" step="1" value="1" />
+            <div class="related-products">
+                <div class="section-heading">
+                    <h2>Sản phẩm liên quan</h2>
                 </div>
-                <div>
-                    <label class="control-label">Phân loại</label>
-                    <div id="variantHint" class="benefit-chip">Chọn một biến thể.</div>
+                <div id="relatedProducts" class="product-row">
+                    <div class="empty-state">Đang tải sản phẩm liên quan...</div>
                 </div>
-            </div>
-
-            <div class="detail-actions">
-                <button id="addToCartButton" type="button" class="btn btn-brand">Thêm vào giỏ hàng</button>
-                <a class="btn btn-ghost-dark" asp-controller="Home" asp-action="Checkout">Đi tới thanh toán</a>
             </div>
         </div>
     </div>
 </section>
-
-@section Scripts {
-    <script>
-        document.addEventListener("DOMContentLoaded", async function () {
-            const productId = "@productId";
-            const detailArtwork = document.getElementById("detailArtwork");
-            const detailMiniPills = document.getElementById("detailMiniPills");
-            const detailCollection = document.getElementById("detailCollection");
-            const detailTitle = document.getElementById("detailTitle");
-            const detailPrice = document.getElementById("detailPrice");
-            const detailStock = document.getElementById("detailStock");
-            const detailDescription = document.getElementById("detailDescription");
-            const variantGrid = document.getElementById("variantGrid");
-            const quantityInput = document.getElementById("quantityInput");
-            const variantHint = document.getElementById("variantHint");
-            const addToCartButton = document.getElementById("addToCartButton");
-
-            let product = null;
-            let selectedVariant = null;
-
-            function renderSelectedVariant() {
-                if (!selectedVariant) {
-                    detailPrice.textContent = "Liên hệ";
-                    detailStock.textContent = "Chưa có biến thể khả dụng.";
-                    variantHint.textContent = "Vui lòng chọn biến thể.";
-                    return;
-                }
-
-                detailPrice.textContent = window.winterCart.formatCurrency(selectedVariant.giaNiemYet);
-                detailStock.textContent = `Tồn kho hiện tại: ${selectedVariant.soLuongTon} sản phẩm.`;
-                variantHint.textContent = `Màu ${selectedVariant.tenMau} - ${selectedVariant.tenKichCo}`;
-                quantityInput.max = Math.max(selectedVariant.soLuongTon, 1);
-
-                if (Number(quantityInput.value) > selectedVariant.soLuongTon && selectedVariant.soLuongTon > 0) {
-                    quantityInput.value = selectedVariant.soLuongTon;
-                }
-
-                [...variantGrid.querySelectorAll(".variant-card")].forEach(card => {
-                    card.classList.toggle("active", card.dataset.id === selectedVariant.chiTietSanPhamID);
-                });
-            }
-
-            if (!productId) {
-                window.winterCart.showToast("Không tìm thấy mã sản phẩm.", "danger");
-                window.location.href = "/Home/Products";
-                return;
-            }
-
-            try {
-                product = await window.winterStore.fetchProduct(productId);
-                detailArtwork.innerHTML = window.winterStore.buildArtwork(product, "large");
-                detailMiniPills.innerHTML = `
-                    <span class="mini-pill">${window.winterStore.escapeHtml(product.meta.category)}</span>
-                    <span class="mini-pill">${window.winterStore.escapeHtml(product.meta.tagline)}</span>
-                `;
-                detailCollection.textContent = product.meta.collection;
-                detailTitle.textContent = product.ten;
-                detailDescription.textContent = product.moTa || "Sản phẩm mùa đông dành cho nhu cầu mặc hằng ngày.";
-
-                if (!Array.isArray(product.bienThe) || product.bienThe.length === 0) {
-                    variantGrid.innerHTML = '<div class="empty-state">Sản phẩm hiện chưa có biến thể để bán.</div>';
-                    addToCartButton.disabled = true;
-                    renderSelectedVariant();
-                    return;
-                }
-
-                selectedVariant = product.bienThe[0];
-                variantGrid.innerHTML = product.bienThe.map(variant => `
-                    <button type="button" class="variant-card${variant.chiTietSanPhamID === selectedVariant.chiTietSanPhamID ? " active" : ""}" data-id="${variant.chiTietSanPhamID}">
-                        <strong>${window.winterStore.escapeHtml(variant.tenMau)}</strong>
-                        <div>${window.winterStore.escapeHtml(variant.tenKichCo)}</div>
-                        <small>${window.winterCart.formatCurrency(variant.giaNiemYet)} - Tồn ${variant.soLuongTon}</small>
-                    </button>
-                `).join("");
-
-                renderSelectedVariant();
-            } catch (error) {
-                console.error(error);
-                detailArtwork.innerHTML = '<div class="empty-state">Không thể tải thông tin sản phẩm.</div>';
-                addToCartButton.disabled = true;
-                return;
-            }
-
-            variantGrid.addEventListener("click", function (event) {
-                const button = event.target.closest("[data-id]");
-                if (!button || !product) {
-                    return;
-                }
-                selectedVariant = product.bienThe.find(item => item.chiTietSanPhamID === button.dataset.id) || null;
-                renderSelectedVariant();
-            });
-
-            addToCartButton.addEventListener("click", function () {
-                if (!selectedVariant) {
-                    window.winterCart.showToast("Vui lòng chọn biến thể sản phẩm.", "warning");
-                    return;
-                }
-
-                const quantity = Number.parseInt(quantityInput.value, 10);
-                if (!Number.isInteger(quantity) || quantity < 1) {
-                    window.winterCart.showToast("Số lượng phải lớn hơn hoặc bằng 1.", "warning");
-                    quantityInput.value = 1;
-                    return;
-                }
-
-                if (quantity > selectedVariant.soLuongTon) {
-                    window.winterCart.showToast(`Số lượng vượt quá tồn kho hiện tại (${selectedVariant.soLuongTon}).`, "warning");
-                    quantityInput.value = selectedVariant.soLuongTon;
-                    return;
-                }
-
-                window.winterCart.addItem({
-                    sanPhamID: product.sanPhamID,
-                    chiTietSanPhamID: selectedVariant.chiTietSanPhamID,
-                    tenSanPham: product.ten,
-                    phanLoai: `${selectedVariant.tenMau} - ${selectedVariant.tenKichCo}`,
-                    soLuong: quantity,
-                    donGia: selectedVariant.giaNiemYet
-                });
-
-                window.winterCart.showToast("Đã thêm sản phẩm vào giỏ hàng.", "success");
-            });
-        });
-    </script>
-}

@@ -2,183 +2,63 @@
     ViewData["Title"] = "Trang chủ";
 }
 
-<section class="home-shell">
-    <div class="home-topbar">
-        <a asp-controller="Home" asp-action="Index">Winter Shop</a>
-        <a asp-controller="Home" asp-action="Products">Áo khoác mùa vụ</a>
-        <a asp-controller="Home" asp-action="Products">Áo khoác ngắn</a>
-        <a asp-controller="Home" asp-action="Products">Áo len layer</a>
-        <a asp-controller="Home" asp-action="Products">Áo gió nhẹ</a>
-        <div class="home-topbar-icons">
-            <i class="bi bi-search"></i>
-            <i class="bi bi-heart"></i>
-            <i class="bi bi-cart3"></i>
-        </div>
+<section id="homePage" class="page-section home-page">
+    <div class="container">
+        <section class="hero-banner">
+            <div class="hero-frame">
+                <div class="hero-copy">
+                    <span class="eyebrow-text">Bộ sưu tập mở bán</span>
+                    <h1>Tưng bừng khai trương.<br />Giảm giá sập sàn.</h1>
+                    <p>Áo khoác mùa lạnh, áo len layer và các mẫu mặc hằng ngày dành cho đơn hàng online.</p>
+                    <div class="hero-actions">
+                        <a class="btn btn-dark-soft" asp-controller="Home" asp-action="Products">Mua ngay</a>
+                        <a class="btn btn-ghost-dark" asp-controller="Home" asp-action="Products" asp-route-category="outerwear">Xem áo khoác ngoài</a>
+                    </div>
+                </div>
+                <div class="hero-visuals">
+                    <div class="hero-art-grid">
+                        <div class="mini-art" data-product="SP0001"></div>
+                        <div class="mini-art" data-product="SP0003"></div>
+                        <div class="mini-art" data-product="SP0004"></div>
+                        <div class="mini-art" data-product="SP0006"></div>
+                    </div>
+                    <div class="hero-discounts">
+                        <span>40%</span>
+                        <span>60%</span>
+                        <span>70%</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="home-block">
+            <div class="section-heading">
+                <h2>Danh mục</h2>
+            </div>
+            <div id="homeCategories" class="category-row"></div>
+        </section>
+
+        <section class="home-block promo-shelf">
+            <div class="section-heading">
+                <h2>Sản phẩm ưu đãi sâu</h2>
+                <a asp-controller="Home" asp-action="Products">Xem tất cả</a>
+            </div>
+            <div id="homeFeaturedProducts" class="product-row">
+                <div class="empty-state">Đang tải sản phẩm khuyến mãi...</div>
+            </div>
+        </section>
+
+        <section class="home-block">
+            <div class="section-heading">
+                <h2>Danh mục phụ</h2>
+            </div>
+            <div id="homeTabs" class="tab-strip"></div>
+            <div id="homeTabProducts" class="product-row large-grid">
+                <div class="empty-state">Đang tải sản phẩm...</div>
+            </div>
+            <div class="center-action">
+                <a class="pill-link" asp-controller="Home" asp-action="Products">Xem tất cả sản phẩm</a>
+            </div>
+        </section>
     </div>
-
-    <section class="opening-banner">
-        <div class="opening-banner-frame">
-            <div class="opening-banner-copy">
-                <h1>Tưng bừng khai trương<br />Giảm giá sập sàn.</h1>
-            </div>
-
-            <div class="opening-banner-products">
-                <span>🧥</span>
-                <span>👕</span>
-                <span>👖</span>
-                <span>👗</span>
-                <span>👟</span>
-            </div>
-        </div>
-
-        <div class="opening-bubbles">
-            <span>50%</span>
-            <span>60%</span>
-            <span>30%</span>
-            <span>70%</span>
-        </div>
-    </section>
-
-    <section class="home-category">
-        <div class="home-section-head">
-            <h3>Danh mục</h3>
-        </div>
-
-        <div class="category-row">
-            <article class="category-card">
-                <div class="category-icon"><i class="bi bi-box"></i></div>
-                <span>Áo phao</span>
-            </article>
-            <article class="category-card">
-                <div class="category-icon"><i class="bi bi-person-bounding-box"></i></div>
-                <span>Áo dạ</span>
-            </article>
-            <article class="category-card">
-                <div class="category-icon"><i class="bi bi-handbag"></i></div>
-                <span>Áo khoác lông</span>
-            </article>
-            <article class="category-card">
-                <div class="category-icon"><i class="bi bi-backpack2"></i></div>
-                <span>Áo parka</span>
-            </article>
-            <button type="button" class="category-next"><i class="bi bi-chevron-right"></i></button>
-        </div>
-
-        <div class="home-center-action">
-            <a class="pill-link" asp-controller="Home" asp-action="Products">Xem tất cả danh mục</a>
-        </div>
-    </section>
-
-    <section class="promo-panel">
-        <div class="home-section-head">
-            <h3>Sản phẩm khuyến mãi sâu</h3>
-        </div>
-
-        <div id="featuredProducts" class="home-product-grid promo-grid">
-            <div class="loading-state">
-                <div class="spinner-border" role="status"></div>
-                <p class="mt-3 mb-0">Đang tải sản phẩm khuyến mãi...</p>
-            </div>
-        </div>
-
-        <div class="home-center-action">
-            <a class="pill-link" asp-controller="Home" asp-action="Products">Xem tất cả sản phẩm khuyến mãi</a>
-        </div>
-    </section>
-
-    <section class="catalog-preview">
-        <div class="preview-tabs">
-            <button type="button" class="preview-tab active">Áo khoác ngoài</button>
-            <button type="button" class="preview-tab">Áo khoác ngắn</button>
-            <button type="button" class="preview-tab">Áo len layer</button>
-            <button type="button" class="preview-tab">Áo gió nhẹ</button>
-        </div>
-
-        <div id="homeProducts" class="home-product-grid">
-            <div class="loading-state">
-                <div class="spinner-border" role="status"></div>
-                <p class="mt-3 mb-0">Đang tải sản phẩm...</p>
-            </div>
-        </div>
-
-        <div class="home-center-action">
-            <a class="pill-link" asp-controller="Home" asp-action="Products">Xem tất cả</a>
-        </div>
-    </section>
-
-    <section class="home-footer-grid">
-        <div class="home-footer-box">
-            <strong>Thời trang mùa đông Winter Shop</strong>
-            <span>Thiết kế trẻ trung, dễ mặc và dễ phối.</span>
-        </div>
-        <div class="home-footer-box">
-            <strong>Hệ thống cửa hàng</strong>
-            <span>Hà Nội, Hải Phòng, TP. Hồ Chí Minh.</span>
-        </div>
-        <div class="home-footer-box">
-            <strong>Đăng ký nhận thông tin</strong>
-            <span>Ưu đãi mới và bộ sưu tập mới mỗi tuần.</span>
-        </div>
-    </section>
-
-    <section class="home-payments">
-        <div class="payment-strip">
-            <span>Phương thức thanh toán</span>
-            <div class="payment-badges">
-                <span>VISA</span>
-                <span>Mastercard</span>
-                <span>JCB</span>
-            </div>
-        </div>
-        <div class="payment-strip">
-            <span>Phương thức vận chuyển</span>
-            <div class="payment-badges">
-                <span>GHN</span>
-                <span>GHTK</span>
-                <span>Ahamove</span>
-            </div>
-        </div>
-    </section>
 </section>
-
-@section Scripts {
-    <script>
-        document.addEventListener("DOMContentLoaded", async function () {
-            const featuredContainer = document.getElementById("featuredProducts");
-            const homeProductsContainer = document.getElementById("homeProducts");
-
-            function renderHomeCard(product) {
-                return `
-                    <article class="home-card">
-                        <div class="home-card-visual">
-                            ${window.winterStore.buildArtwork(product, "card")}
-                        </div>
-                        <div class="home-card-info">
-                            <h4>${window.winterStore.escapeHtml(product.ten)}</h4>
-                            <div class="home-card-price">${window.winterCart.formatCurrency(product.giaThapNhat)}</div>
-                            <div class="home-card-old-price">${window.winterCart.formatCurrency(product.giaThapNhat + 100000)}</div>
-                        </div>
-                    </article>
-                `;
-            }
-
-            try {
-                const products = await window.winterStore.fetchProducts();
-                const featured = [...products].sort((a, b) => a.giaThapNhat - b.giaThapNhat).slice(0, 4);
-                const preview = [...products].slice(0, 8);
-
-                featuredContainer.innerHTML = featured.length
-                    ? featured.map(renderHomeCard).join("")
-                    : '<div class="empty-state">Chưa có sản phẩm.</div>';
-
-                homeProductsContainer.innerHTML = preview.length
-                    ? preview.map(renderHomeCard).join("")
-                    : '<div class="empty-state">Chưa có sản phẩm.</div>';
-            } catch (error) {
-                console.error(error);
-                featuredContainer.innerHTML = '<div class="empty-state">Không thể tải sản phẩm.</div>';
-                homeProductsContainer.innerHTML = '<div class="empty-state">Không thể tải sản phẩm.</div>';
-            }
-        });
-    </script>
-}

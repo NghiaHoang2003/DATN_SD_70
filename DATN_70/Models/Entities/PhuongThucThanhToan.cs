@@ -1,12 +1,22 @@
-﻿namespace DATN_70.Models.Entities
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using static DATN_70.Models.Enums.Enums;
+namespace DATN_70.Models.Entities
 {
     public class PhuongThucThanhToan
     {
+        [Key]
+        [MaxLength(20)]
         public string PhuongThucThanhToanID { get; set; }
-        public string Ten { get; set; }
-        public string KieuThanhToan { get; set; } // Online/Offline
+
+        [Required]
+        [MaxLength(100)]
+        public string Ten { get; set; }        
+        public KieuThanhToan KieuThanhToan { get; set; }
+
+        [MaxLength(500)]
         public string HinhURL { get; set; }
-        public int TrangThai { get; set; } // 1: Đang hoạt động, 0: Không hoạt động        
+        public TrangThaiHoatDong TrangThai { get; set; }   
         public ICollection<ChiTietThanhToan> ChiTietThanhToans { get; set; }
     }
 }
