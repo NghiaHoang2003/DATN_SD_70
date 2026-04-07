@@ -2,190 +2,90 @@
     ViewData["Title"] = "Thanh toán";
 }
 
-<section class="checkout-shell">
-    <div class="page-head">
-        <div>
-            <span class="page-tag">Thanh toán</span>
-            <h2 class="page-title">Hoàn tất đơn hàng</h2>
-            <p class="page-copy">Nhập thông tin khách hàng và xác nhận thanh toán.</p>
+<section id="checkoutPage" class="page-section checkout-page">
+    <div class="container">
+        <div class="checkout-shell">
+            <div class="checkout-form-panel">
+                <h1>Thông tin khách hàng</h1>
+                <div class="checkout-form-grid">
+                    <div class="full">
+                        <label class="filter-label" for="checkoutFullName">Họ và tên</label>
+                        <input id="checkoutFullName" type="text" class="store-input" placeholder="Họ và tên" />
+                    </div>
+                    <div>
+                        <label class="filter-label" for="checkoutEmail">Email</label>
+                        <input id="checkoutEmail" type="email" class="store-input" placeholder="Email" />
+                    </div>
+                    <div>
+                        <label class="filter-label" for="checkoutPhone">Số điện thoại</label>
+                        <input id="checkoutPhone" type="tel" class="store-input" placeholder="Số điện thoại" />
+                    </div>
+                    <div class="full">
+                        <label class="filter-label" for="checkoutStreet">Địa chỉ</label>
+                        <input id="checkoutStreet" type="text" class="store-input" placeholder="Số nhà, tên đường" />
+                    </div>
+                    <div>
+                        <label class="filter-label" for="checkoutProvince">Tỉnh/Thành</label>
+                        <select id="checkoutProvince" class="store-select"></select>
+                    </div>
+                    <div>
+                        <label class="filter-label" for="checkoutDistrict">Quận/Huyện</label>
+                        <select id="checkoutDistrict" class="store-select"></select>
+                    </div>
+                    <div>
+                        <label class="filter-label" for="checkoutWard">Phường/Xã</label>
+                        <select id="checkoutWard" class="store-select"></select>
+                    </div>
+                </div>
+
+                <div class="checkout-section">
+                    <h2>Phương thức vận chuyển</h2>
+                    <div id="shippingOptions" class="stack-options"></div>
+                </div>
+
+                <div class="checkout-section">
+                    <h2>Phương thức thanh toán</h2>
+                    <div id="paymentOptions" class="stack-options"></div>
+                </div>
+
+                <div class="checkout-section">
+                    <h2>Mã giảm giá</h2>
+                    <div class="coupon-row">
+                        <input id="checkoutCouponInput" type="text" class="store-input" placeholder="Nhập mã hoặc chọn mã có sẵn" />
+                        <button id="applyCouponButton" type="button" class="btn btn-ghost-dark">Áp dụng</button>
+                    </div>
+                    <div id="couponSuggestions" class="coupon-list"></div>
+                </div>
+
+                <div class="checkout-actions">
+                    <a class="btn btn-ghost-dark" asp-controller="Home" asp-action="Cart">Giỏ hàng</a>
+                    <button id="placeOrderButton" type="button" class="btn btn-brand">Hoàn tất đơn hàng</button>
+                </div>
+            </div>
+
+            <aside class="checkout-summary-panel">
+                <h2>Đơn hàng</h2>
+                <div id="checkoutItems" class="checkout-items"></div>
+                <div class="summary-list">
+                    <div class="summary-row">
+                        <span>Tạm tính</span>
+                        <strong id="checkoutSubtotal">0 đ</strong>
+                    </div>
+                    <div class="summary-row">
+                        <span>Tiền ship</span>
+                        <span id="checkoutShipping">0 đ</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Tiền giảm</span>
+                        <span id="checkoutDiscount">0 đ</span>
+                    </div>
+                    <div class="summary-row summary-total">
+                        <span>Tổng cộng</span>
+                        <strong id="checkoutGrandTotal">0 đ</strong>
+                    </div>
+                </div>
+                <div id="checkoutSummaryMessage" class="checkout-summary-message"></div>
+            </aside>
         </div>
-    </div>
-
-    <div class="checkout-layout">
-        <div class="checkout-panel">
-            <h4>Thông tin giao hàng</h4>
-            <div class="checkout-form-grid">
-                <div class="full">
-                    <label class="control-label" for="customerName">Họ và tên người nhận</label>
-                    <input id="customerName" type="text" class="store-input" placeholder="Nguyễn Văn A" />
-                </div>
-                <div>
-                    <label class="control-label" for="customerPhone">Số điện thoại</label>
-                    <input id="customerPhone" type="tel" class="store-input" placeholder="0912345678" />
-                </div>
-                <div>
-                    <label class="control-label" for="customerEmail">Email</label>
-                    <input id="customerEmail" type="email" class="store-input" placeholder="email@example.com" />
-                </div>
-                <div class="full">
-                    <label class="control-label" for="customerAddress">Địa chỉ nhận hàng</label>
-                    <input id="customerAddress" type="text" class="store-input" placeholder="Số nhà, đường, phường xã, quận huyện..." />
-                </div>
-                <div class="full">
-                    <label class="control-label" for="customerNote">Ghi chú</label>
-                    <textarea id="customerNote" class="store-textarea" rows="3" placeholder="Ghi chú thêm"></textarea>
-                </div>
-            </div>
-
-            <h4 class="mt-4">Phương thức thanh toán</h4>
-            <div class="payment-options">
-                <label class="payment-option">
-                    <input type="radio" name="paymentMethod" value="cod" checked />
-                    <span>
-                        <strong>Thanh toán khi nhận hàng</strong>
-                        <span>Thanh toán trực tiếp khi nhận hàng.</span>
-                    </span>
-                </label>
-                <label class="payment-option">
-                    <input type="radio" name="paymentMethod" value="bank" />
-                    <span>
-                        <strong>Chuyển khoản ngân hàng</strong>
-                        <span>Thanh toán qua tài khoản ngân hàng.</span>
-                    </span>
-                </label>
-            </div>
-
-            <button id="btnPlaceOrder" type="button" class="btn btn-brand checkout-submit">Đặt hàng ngay</button>
-            <div class="confirmation-panel">Vui lòng kiểm tra lại thông tin trước khi xác nhận đơn hàng.</div>
-        </div>
-
-        <aside class="summary-panel">
-            <h4>Đơn hàng của bạn</h4>
-            <div id="checkoutItems"></div>
-            <div class="summary-list mt-3">
-                <div class="summary-row">
-                    <span>Tổng số lượng</span>
-                    <strong id="checkoutItemCount">0</strong>
-                </div>
-                <div class="summary-row">
-                    <span>Tạm tính</span>
-                    <strong id="checkoutSubtotal">0 đ</strong>
-                </div>
-                <div class="summary-row summary-total">
-                    <span>Tổng thanh toán</span>
-                    <span id="checkoutTotal">0 đ</span>
-                </div>
-            </div>
-        </aside>
     </div>
 </section>
-
-@section Scripts {
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const btnPlaceOrder = document.getElementById("btnPlaceOrder");
-            const checkoutItems = document.getElementById("checkoutItems");
-            const checkoutItemCount = document.getElementById("checkoutItemCount");
-            const checkoutSubtotal = document.getElementById("checkoutSubtotal");
-            const checkoutTotal = document.getElementById("checkoutTotal");
-            const customerName = document.getElementById("customerName");
-            const customerPhone = document.getElementById("customerPhone");
-            const customerAddress = document.getElementById("customerAddress");
-
-            function renderCheckoutSummary() {
-                const cart = window.winterCart.getCart();
-                if (!cart.length) {
-                    window.location.href = "/Home/Cart";
-                    return [];
-                }
-
-                checkoutItemCount.textContent = window.winterCart.getTotalQuantity(cart);
-                checkoutSubtotal.textContent = window.winterCart.formatCurrency(window.winterCart.getSubtotal(cart));
-                checkoutTotal.textContent = window.winterCart.formatCurrency(window.winterCart.getSubtotal(cart));
-
-                checkoutItems.innerHTML = cart.map(item => `
-                    <article class="checkout-item">
-                        <div class="thumb-wrap">
-                            ${window.winterStore.buildArtwork({ sanPhamID: item.sanPhamID }, "card")}
-                        </div>
-                        <div>
-                            <div class="item-name">${window.winterStore.escapeHtml(item.tenSanPham)}</div>
-                            <div class="item-meta">${window.winterStore.escapeHtml(item.phanLoai)} - SL ${item.soLuong}</div>
-                        </div>
-                        <strong class="price-amount">${window.winterCart.formatCurrency(item.donGia * item.soLuong)}</strong>
-                    </article>
-                `).join("");
-
-                return cart;
-            }
-
-            function validateForm() {
-                const validPhone = window.winterCart.isValidPhoneNumber(customerPhone.value);
-                customerPhone.classList.toggle("is-invalid", !validPhone);
-                customerName.classList.toggle("is-invalid", !customerName.value.trim());
-                customerAddress.classList.toggle("is-invalid", !customerAddress.value.trim());
-
-                if (!customerName.value.trim() || !customerAddress.value.trim()) {
-                    window.winterCart.showToast("Vui lòng nhập đủ thông tin nhận hàng.", "warning");
-                    return false;
-                }
-
-                if (!validPhone) {
-                    window.winterCart.showToast("Số điện thoại không hợp lệ.", "warning");
-                    return false;
-                }
-
-                return true;
-            }
-
-            renderCheckoutSummary();
-
-            btnPlaceOrder.addEventListener("click", async function () {
-                const cart = window.winterCart.getCart();
-                if (!cart.length || !validateForm()) {
-                    return;
-                }
-
-                const requestData = {
-                    tenKhachHang: customerName.value.trim(),
-                    soDienThoai: customerPhone.value.replace(/\s+/g, ""),
-                    diaChiGiaoHang: customerAddress.value.trim(),
-                    items: cart.map(item => ({
-                        chiTietSanPhamID: item.chiTietSanPhamID,
-                        soLuong: item.soLuong
-                    }))
-                };
-
-                try {
-                    btnPlaceOrder.disabled = true;
-                    btnPlaceOrder.textContent = "Đang xử lý...";
-
-                    const response = await fetch("/api/orders", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(requestData)
-                    });
-
-                    if (!response.ok) {
-                        const error = await response.json();
-                        window.winterCart.showToast(error.message || "Không thể tạo đơn hàng.", "danger");
-                        return;
-                    }
-
-                    const result = await response.json();
-                    window.winterCart.clear();
-                    window.winterCart.showToast(`Đặt hàng thành công. Mã đơn: ${result.hoaDonID}`, "success");
-                    setTimeout(function () {
-                        window.location.href = "/";
-                    }, 1200);
-                } catch (error) {
-                    console.error(error);
-                    window.winterCart.showToast("Không thể kết nối tới máy chủ.", "danger");
-                } finally {
-                    btnPlaceOrder.disabled = false;
-                    btnPlaceOrder.textContent = "Đặt hàng ngay";
-                }
-            });
-        });
-    </script>
-}
