@@ -1,17 +1,31 @@
-﻿using AspNetCoreGeneratedDocument;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using AspNetCoreGeneratedDocument;
 
 namespace DATN_70.Models.Entities
 {
     public class SanPham
     {
+        [Key]
+        [MaxLength(20)]
         public string SanPhamID { get; set; }
-        public string Ten { get; set; }
-        public double MucVAT { get; set; }
-        public string ChatLieu { get; set; }
-        public string MoTa { get; set; }
-        public string ThuongHieuID { get; set; }
-        public string DanhMucID { get; set; }
 
+        [Required(ErrorMessage = "Tên sản phẩm không được để trống")]
+        [MaxLength(200)]
+        public string Ten { get; set; }
+
+        [Range(0, 100)]
+        public int MucVAT { get; set; }
+
+        [MaxLength(100)]
+        public string? ChatLieu { get; set; }
+        public string MoTa { get; set; }
+
+        [MaxLength(20)]
+        public string ThuongHieuID { get; set; }
+
+        [MaxLength(20)]
+        public string DanhMucID { get; set; }
 
         public ThuongHieu ThuongHieu { get; set; }
         public DanhMuc DanhMuc { get; set; }

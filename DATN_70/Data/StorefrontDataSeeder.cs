@@ -17,13 +17,47 @@ public sealed class StorefrontDataSeeder
     }
 
     public async Task SeedAsync(CancellationToken cancellationToken = default)
-    {
+    {       
+        await SeedDanhMucAsync(cancellationToken);
+        await SeedThuongHieuAsync(cancellationToken);
         await SeedKichCoAsync(cancellationToken);
-        await SeedMauAsync(cancellationToken);
+        await SeedMauAsync(cancellationToken);       
         await SeedSanPhamAsync(cancellationToken);
         await SeedChiTietSanPhamAsync(cancellationToken);
 
         _logger.LogInformation("Storefront seed data is ready via EF Core.");
+    }
+
+    private async Task SeedDanhMucAsync(CancellationToken cancellationToken)
+    {
+        var items = new[]
+        {
+                new DanhMuc { DanhMucID = "DM001", Ten = "Áo Khoác Nam" },
+                new DanhMuc { DanhMucID = "DM002", Ten = "Áo Len & Hoodie" },
+                new DanhMuc { DanhMucID = "DM003", Ten = "Phụ Kiện Mùa Đông" }
+            };
+
+        foreach (var item in items)
+        {
+            if (!await _dbContext.DanhMucs.AnyAsync(x => x.DanhMucID == item.DanhMucID, cancellationToken))
+                _dbContext.DanhMucs.Add(item);
+        }
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+    private async Task SeedThuongHieuAsync(CancellationToken cancellationToken)
+    {
+        var items = new[]
+        {
+                new ThuongHieu { ThuongHieuID = "TH001", Ten = "Arctic Wear", LogoURL = "", MoTa = "Chuyên đồ hàn đới" },
+                new ThuongHieu { ThuongHieuID = "TH002", Ten = "Urban Style", LogoURL = "", MoTa = "Phong cách đường phố" }
+            };
+
+        foreach (var item in items)
+        {
+            if (!await _dbContext.ThuongHieus.AnyAsync(x => x.ThuongHieuID == item.ThuongHieuID, cancellationToken))
+                _dbContext.ThuongHieus.Add(item);
+        }
+        await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
     private async Task SeedKichCoAsync(CancellationToken cancellationToken)
@@ -73,12 +107,12 @@ public sealed class StorefrontDataSeeder
     {
         var items = new[]
         {
-            new SanPham { SanPhamID = "SP0001", Ten = "Ao Phao Arctic Shield", MoTa = "Form dai giu nhiet tot, be mat can gio nhe va phu hop cho nhung ngay lanh sau. Thiet ke toi gian de phoi cung jeans, len va boots." },
-            new SanPham { SanPhamID = "SP0002", Ten = "Ao Da Sherpa Espresso", MoTa = "Chat lieu gia da mem, lot long am ap va tao diem nhan thanh lich cho phong cach thanh pho mua dong." },
-            new SanPham { SanPhamID = "SP0003", Ten = "Sweater Alpine Soft Knit", MoTa = "Mau sweater len mem nhe, tay raplan de mac layering ca ngay ma van gon dang." },
-            new SanPham { SanPhamID = "SP0004", Ten = "Ao Mangto Wool Blend", MoTa = "Thiet ke mangto dang suong, tong mau tram sang, hop cho outfit cong so va di choi cuoi tuan." },
-            new SanPham { SanPhamID = "SP0005", Ten = "Hoodie Fleece Cloudline", MoTa = "Ni fleece day dan, giu am nhanh va cho cam giac thoai mai trong nhung ngay se lanh." },
-            new SanPham { SanPhamID = "SP0006", Ten = "Gile Phao Urban Heat", MoTa = "Gile phao gon nhe, de phoi layer voi hoodie hoac ao len, hop cho di chuyen hang ngay." }
+            new SanPham { SanPhamID = "SP0001", Ten = "Ao Phao Arctic Shield", ChatLieu = "Vải Phao Chống Nước", DanhMucID = "DM001", ThuongHieuID = "TH001", MoTa = "Form dai giu nhiet tot, be mat can gio nhe va phu hop cho nhung ngay lanh sau. Thiet ke toi gian de phoi cung jeans, len va boots." },
+            new SanPham { SanPhamID = "SP0002", Ten = "Ao Da Sherpa Espresso", ChatLieu = "Vải Phao Chống Nước", DanhMucID = "DM002", ThuongHieuID = "TH002", MoTa = "Chat lieu gia da mem, lot long am ap va tao diem nhan thanh lich cho phong cach thanh pho mua dong." },
+            new SanPham { SanPhamID = "SP0003", Ten = "Sweater Alpine Soft Knit", ChatLieu = "Vải Phao Chống Nước", DanhMucID = "DM003", ThuongHieuID = "TH002", MoTa = "Mau sweater len mem nhe, tay raplan de mac layering ca ngay ma van gon dang." },
+            new SanPham { SanPhamID = "SP0004", Ten = "Ao Mangto Wool Blend", ChatLieu = "Vải Phao Chống Nước", DanhMucID = "DM003", ThuongHieuID = "TH001", MoTa = "Thiet ke mangto dang suong, tong mau tram sang, hop cho outfit cong so va di choi cuoi tuan." },
+            new SanPham { SanPhamID = "SP0005", Ten = "Hoodie Fleece Cloudline", ChatLieu = "Vải Phao Chống Nước", DanhMucID = "DM002", ThuongHieuID = "TH002", MoTa = "Ni fleece day dan, giu am nhanh va cho cam giac thoai mai trong nhung ngay se lanh." },
+            new SanPham { SanPhamID = "SP0006", Ten = "Gile Phao Urban Heat", ChatLieu = "Vải Phao Chống Nước", DanhMucID = "DM001", ThuongHieuID = "TH001", MoTa = "Gile phao gon nhe, de phoi layer voi hoodie hoac ao len, hop cho di chuyen hang ngay." }
         };
 
         foreach (var item in items)

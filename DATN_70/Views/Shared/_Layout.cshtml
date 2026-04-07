@@ -47,6 +47,7 @@
                     <i class="bi bi-credit-card"></i>
                     <span>Thanh toán</span>
                 </a>
+                
             </nav>
         </aside>
 
@@ -56,9 +57,27 @@
                     <span>Cửa hàng: Khu vực A - Hà Nội</span>
                 </div>
                 <div class="workspace-meta-right">
-                    <span>Nhân viên: Nguyễn Thị A - 00:19:36</span>
-                    <span>Thg 4 - 16 - 2026</span>
-                    <span>12:00</span>
+                    @{
+                        // Kiểm tra xem người dùng đã đăng nhập chưa
+                        var userId = Context.Session.GetString("UserId");
+                        var userEmail = Context.Session.GetString("UserEmail"); // Ta sẽ thêm cái này ở Controller
+                    }
+                    @if (string.IsNullOrEmpty(userId))
+                    {
+                        <a href="/Account/Login" class="btn btn-sm btn-outline-dark fw-bold">Đăng nhập</a>
+                        <a href="/Account/Register" class="btn btn-sm btn-dark fw-bold">Đăng ký</a>
+                    }
+                    else
+                    {
+                        <span class="text-primary fw-bold">
+                            <i class="bi bi-person-circle"></i> @(string.IsNullOrEmpty(userEmail) ? "Nhân viên" : userEmail)
+                        </span>
+                        <a href="/Account/Logout" class="btn btn-sm btn-danger fw-bold" title="Đăng xuất">
+                            <i class="bi bi-box-arrow-right"></i> Thoát
+                        </a>
+                    }
+                    <span class="text-muted border-start ps-3 ms-2">@DateTime.Now.ToString("dd/MM/yyyy")</span>
+                    <span class="text-muted fw-bold">@DateTime.Now.ToString("HH:mm")</span>                    
                 </div>
             </header>
 
