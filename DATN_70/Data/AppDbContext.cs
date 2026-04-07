@@ -13,13 +13,15 @@ namespace DATN_70.Data
         public DbSet<KichCo> KichCos => Set<KichCo>();
         public DbSet<StorefrontOrder> StorefrontOrders => Set<StorefrontOrder>();
         public DbSet<StorefrontOrderItem> StorefrontOrderItems => Set<StorefrontOrderItem>();
+        public DbSet<TaiKhoan> TaiKhoans => Set<TaiKhoan>();
+        public DbSet<VaiTro> VaiTros => Set<VaiTro>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            modelBuilder.Ignore<TaiKhoan>();
-            modelBuilder.Ignore<VaiTro>();
+            //modelBuilder.Ignore<TaiKhoan>();
+            //modelBuilder.Ignore<VaiTro>();
             modelBuilder.Ignore<KhachHang>();
             modelBuilder.Ignore<NhanVien>();
             modelBuilder.Ignore<DiaChi>();
