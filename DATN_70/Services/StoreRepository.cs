@@ -22,9 +22,9 @@ public sealed class StoreRepository : IStoreRepository
                 sp.Ten,
                 sp.MoTa,
                 MIN(ctsp.GiaNiemYet) AS GiaThapNhat,
-                SUM(ctsp.SoLuongTon) AS TongSoLuongTon
-            FROM SanPham sp
-            LEFT JOIN ChiTietSanPham ctsp ON ctsp.SanPhamID = sp.SanPhamID
+                SUM(ctsp.SoLuongTonKho) AS TongSoLuongTon
+            FROM SanPhams sp
+            LEFT JOIN ChiTietSanPhams ctsp ON ctsp.SanPhamID = sp.SanPhamID
             GROUP BY sp.SanPhamID, sp.Ten, sp.MoTa
             ORDER BY sp.Ten;
             """;
@@ -56,7 +56,7 @@ public sealed class StoreRepository : IStoreRepository
     {
         const string productSql = """
             SELECT SanPhamID, Ten, MoTa
-            FROM SanPham
+            FROM SanPhams
             WHERE SanPhamID = @SanPhamID;
             """;
 
@@ -68,10 +68,10 @@ public sealed class StoreRepository : IStoreRepository
                 ctsp.MauID,
                 m.Ten,
                 ctsp.GiaNiemYet,
-                ctsp.SoLuongTon
-            FROM ChiTietSanPham ctsp
-            INNER JOIN KichCo kc ON kc.KichCoID = ctsp.KichCoID
-            INNER JOIN Mau m ON m.MauID = ctsp.MauID
+                ctsp.SoLuongTonKho
+            FROM ChiTietSanPhams ctsp
+            INNER JOIN KichCos kc ON kc.KichCoID = ctsp.KichCoID
+            INNER JOIN Maus m ON m.MauID = ctsp.MauID
             WHERE ctsp.SanPhamID = @SanPhamID
             ORDER BY kc.Ten, m.Ten;
             """;
@@ -235,8 +235,8 @@ public sealed class StoreRepository : IStoreRepository
         CancellationToken cancellationToken)
     {
         const string sql = """
-            SELECT GiaNiemYet, SoLuongTon
-            FROM ChiTietSanPham WITH (UPDLOCK, ROWLOCK)
+            SELECT GiaNiemYet, SoLuongTonKho
+            FROM ChiTietSanPhams WITH (UPDLOCK, ROWLOCK)
             WHERE ChiTietSanPhamID = @ChiTietSanPhamID;
             """;
 
@@ -339,8 +339,8 @@ public sealed class StoreRepository : IStoreRepository
         CancellationToken cancellationToken)
     {
         const string sql = """
-            UPDATE ChiTietSanPham
-            SET SoLuongTon = SoLuongTon - @SoLuong
+            UPDATE ChiTietSanPhams
+            SET SoLuongTonKho = SoLuongTonKho - @SoLuong
             WHERE ChiTietSanPhamID = @ChiTietSanPhamID;
             """;
 

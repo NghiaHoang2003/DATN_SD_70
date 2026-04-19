@@ -7,12 +7,26 @@
         <section class="hero-banner">
             <div class="hero-frame">
                 <div class="hero-copy">
-                    <span class="eyebrow-text">Bộ sưu tập mở bán</span>
-                    <h1>Tưng bừng khai trương.<br />Giảm giá sập sàn.</h1>
-                    <p>Áo khoác mùa lạnh, áo len layer và các mẫu mặc hằng ngày dành cho đơn hàng online.</p>
+                    <span class="eyebrow-text">Bộ sưu tập đông 2026</span>
+                    <h1>Giữ ấm gọn gàng.<br />Mặc đẹp mỗi ngày.</h1>
+                    <p>Winter Shop tập trung vào áo khoác, áo len layer và các mẫu cơ bản dễ phối để bạn chốt đơn nhanh, mặc bền và dùng được cả mùa.</p>
                     <div class="hero-actions">
-                        <a class="btn btn-dark-soft" asp-controller="Home" asp-action="Products">Mua ngay</a>
+                        <a class="btn btn-brand" asp-controller="Home" asp-action="Products">Mua ngay</a>
                         <a class="btn btn-ghost-dark" asp-controller="Home" asp-action="Products" asp-route-category="outerwear">Xem áo khoác ngoài</a>
+                    </div>
+                    <div class="hero-highlights">
+                        <div>
+                            <strong>150+</strong>
+                            <span>Mẫu đang bán</span>
+                        </div>
+                        <div>
+                            <strong>24h</strong>
+                            <span>Xử lý đơn nội thành</span>
+                        </div>
+                        <div>
+                            <strong>7 ngày</strong>
+                            <span>Hỗ trợ đổi trả</span>
+                        </div>
                     </div>
                 </div>
                 <div class="hero-visuals">
@@ -23,24 +37,45 @@
                         <div class="mini-art" data-product="SP0006"></div>
                     </div>
                     <div class="hero-discounts">
-                        <span>40%</span>
-                        <span>60%</span>
-                        <span>70%</span>
+                        <span>Outerwear</span>
+                        <span>Layering</span>
+                        <span>Heattech</span>
                     </div>
                 </div>
             </div>
         </section>
 
+        <section class="home-feature-grid">
+            <article class="home-feature-card">
+                <strong>Giao diện mua nhanh</strong>
+                <p>Chọn size, màu và thêm giỏ hàng ngay trên storefront mà không cần đi qua nhiều lớp màn hình.</p>
+            </article>
+            <article class="home-feature-card">
+                <strong>Checkout gọn hơn</strong>
+                <p>Người dùng đã đăng nhập có thể lấy sẵn thông tin hồ sơ và địa chỉ giao hàng mặc định.</p>
+            </article>
+            <article class="home-feature-card">
+                <strong>Theo dõi đơn rõ ràng</strong>
+                <p>Tập trung trạng thái đơn hàng theo từng mốc để khách tra cứu lại sau khi thanh toán.</p>
+            </article>
+        </section>
+
         <section class="home-block">
             <div class="section-heading">
-                <h2>Danh mục</h2>
+                <div>
+                    <h2>Danh mục nổi bật</h2>
+                    <p class="section-subtitle">Đi thẳng vào nhóm sản phẩm bán tốt nhất trong mùa lạnh.</p>
+                </div>
             </div>
             <div id="homeCategories" class="category-row"></div>
         </section>
 
         <section class="home-block promo-shelf">
             <div class="section-heading">
-                <h2>Sản phẩm ưu đãi sâu</h2>
+                <div>
+                    <h2>Sản phẩm ưu đãi sâu</h2>
+                    <p class="section-subtitle">Nhóm hàng đang có mức giá tốt để kéo tỷ lệ chốt đơn ở trang chủ.</p>
+                </div>
                 <a asp-controller="Home" asp-action="Products">Xem tất cả</a>
             </div>
             <div id="homeFeaturedProducts" class="product-row">
@@ -50,7 +85,10 @@
 
         <section class="home-block">
             <div class="section-heading">
-                <h2>Danh mục phụ</h2>
+                <div>
+                    <h2>Mặc theo nhu cầu</h2>
+                    <p class="section-subtitle">Chuyển nhanh giữa các nhóm áo khoác, layer và đồ giữ nhiệt để lọc hàng phù hợp.</p>
+                </div>
             </div>
             <div id="homeTabs" class="tab-strip"></div>
             <div id="homeTabProducts" class="product-row large-grid">

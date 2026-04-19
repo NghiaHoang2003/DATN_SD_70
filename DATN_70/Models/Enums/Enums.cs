@@ -6,9 +6,11 @@
         public enum TrangThaiHoaDon
         {
             ChoDuyet = 0,
-            DangGiao = 1,
-            HoanThanh = 2,
-            DaHuy = 3
+            DaXacNhan = 1,
+            DangChuanBi = 2,
+            DangGiao = 3,
+            HoanThanh = 4,
+            DaHuy = 5
         }
         // 2. Loại giao dịch
         public enum LoaiGiaoDich

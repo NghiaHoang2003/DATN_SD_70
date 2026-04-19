@@ -1,13 +1,60 @@
+@model DATN_70.Models.ViewModels.CheckoutPageViewModel
+@using System.Text.Json
 @{
     ViewData["Title"] = "Thanh toán";
+    var bootstrapJson = JsonSerializer.Serialize(Model.Customer, new JsonSerializerOptions
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    });
 }
 
 <section id="checkoutPage" class="page-section checkout-page">
     <div class="container">
         <div class="checkout-shell">
             <div class="checkout-form-panel">
-                <h1>Thông tin khách hàng</h1>
+                <div class="section-heading">
+                    <div>
+                        <h1>Thông tin đơn hàng</h1>
+                        <p class="section-subtitle">Kiểm tra người nhận, địa chỉ giao hàng và phương thức thanh toán trước khi hoàn tất.</p>
+                    </div>
+                </div>
+
+                @if (Model.Customer.IsAuthenticated && Model.Customer.SavedAddresses.Any())
+                {
+                    <div class="checkout-section">
+                        <div class="section-heading">
+                            <h2>Địa chỉ đã lưu</h2>
+                            <button id="useCustomAddressButton" type="button" class="btn btn-ghost-dark btn-sm">Chọn thông tin khác</button>
+                        </div>
+                        <div id="savedAddressList" class="address-choice-grid">
+                            @foreach (var address in Model.Customer.SavedAddresses)
+                            {
+                                <button type="button"
+                                        class="saved-address-card @(address.IsDefault ? "is-default" : string.Empty)"
+                                        data-address-id="@address.Id"
+                                        data-recipient="@address.RecipientName"
+                                        data-phone="@address.Phone"
+                                        data-street="@address.Street"
+                                        data-province="@address.Province"
+                                        data-district="@address.District"
+                                        data-ward="@address.Ward">
+                                    <span class="saved-address-top">
+                                        <strong>@address.RecipientName</strong>
+                                        @if (address.IsDefault)
+                                        {
+                                            <span class="status-pill">Mặc định</span>
+                                        }
+                                    </span>
+                                    <span>@address.Phone</span>
+                                    <span>@address.DisplayAddress</span>
+                                </button>
+                            }
+                        </div>
+                    </div>
+                }
+
                 <div class="checkout-form-grid">
+                    <input id="selectedAddressId" type="hidden" value="@Model.Customer.SelectedAddressId" />
                     <div class="full">
                         <label class="filter-label" for="checkoutFullName">Họ và tên</label>
                         <input id="checkoutFullName" type="text" class="store-input" placeholder="Họ và tên" />
@@ -21,7 +68,7 @@
                         <input id="checkoutPhone" type="tel" class="store-input" placeholder="Số điện thoại" />
                     </div>
                     <div class="full">
-                        <label class="filter-label" for="checkoutStreet">Địa chỉ</label>
+                        <label class="filter-label" for="checkoutStreet">Địa chỉ chi tiết</label>
                         <input id="checkoutStreet" type="text" class="store-input" placeholder="Số nhà, tên đường" />
                     </div>
                     <div>
@@ -89,3 +136,9 @@
         </div>
     </div>
 </section>
+
+@section Scripts {
+    <script>
+        window.checkoutBootstrap = @Html.Raw(bootstrapJson);
+    </script>
+}

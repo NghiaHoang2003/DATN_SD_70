@@ -1,9 +1,18 @@
+@using Microsoft.AspNetCore.Http
+@{
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+    var userId = Context.Session.GetString("UserId");
+    var userEmail = Context.Session.GetString("UserEmail");
+    var isAuthenticated = !string.IsNullOrWhiteSpace(userId);
+    var pageTitle = ViewData["Title"]?.ToString() ?? "Winter Shop";
+}
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Winter Shop</title>
+    <title>@pageTitle - Winter Shop</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
@@ -13,6 +22,12 @@
 </head>
 <body class="store-body">
     <header class="store-header">
+        <div class="store-topbar">
+            <div class="container store-topbar-inner">
+                <span>Miễn phí giao hàng cho đơn từ 1.500.000đ</span>
+                <span>Hỗ trợ đổi trả trong 7 ngày</span>
+            </div>
+        </div>
         <div class="container store-header-inner">
             <a class="store-logo" asp-controller="Home" asp-action="Index">Winter Shop</a>
 
@@ -45,29 +60,6 @@
                         <a asp-controller="Home" asp-action="Products" asp-route-category="heattech" asp-route-subcategory="giu-nhiet">Áo giữ nhiệt</a>
                     </div>
                 </div>
-            <nav class="sidebar-nav">
-                <a class="sidebar-link @(isProducts ? "active" : string.Empty)" asp-controller="Home" asp-action="Products">
-                    <i class="bi bi-basket"></i>
-                    <span>Bán hàng</span>
-                </a>
-                <a class="sidebar-link @(isCart ? "active" : string.Empty)" asp-controller="Home" asp-action="Cart">
-                    <i class="bi bi-cart3"></i>
-                    <span>Quản lý đơn hàng</span>
-                    <span id="cartBadge" class="sidebar-badge">0</span>
-                </a>
-                <a class="sidebar-link @(isHome ? "active" : string.Empty)" asp-controller="Home" asp-action="Index">
-                    <i class="bi bi-people"></i>
-                    <span>Khách hàng</span>
-                </a>
-                <a class="sidebar-link" asp-controller="Home" asp-action="Products">
-                    <i class="bi bi-handbag"></i>
-                    <span>Sản phẩm</span>
-                </a>
-                <a class="sidebar-link @(isCheckout ? "active" : string.Empty)" asp-controller="Home" asp-action="Checkout">
-                    <i class="bi bi-credit-card"></i>
-                    <span>Thanh toán</span>
-                </a>
-                
             </nav>
 
             <div class="store-actions">
@@ -84,16 +76,31 @@
                     </div>
                 </div>
 
-                <div class="account-menu">
-                    <button type="button" class="icon-button" aria-label="Tài khoản">
+                @if (!isAuthenticated)
+                {
+                    <a class="icon-button" asp-controller="Account" asp-action="Login" aria-label="Đăng nhập">
                         <i class="bi bi-person"></i>
-                    </button>
-                    <div class="account-dropdown">
-                        <a href="#">Đăng nhập</a>
-                        <a href="#">Đăng ký</a>
-                        <a href="#">Tra cứu đơn hàng</a>
+                    </a>
+                }
+                else
+                {
+                    <div class="account-menu">
+                        <button type="button" class="icon-button" aria-label="Tài khoản">
+                            <i class="bi bi-person"></i>
+                        </button>
+                        <div class="account-dropdown">
+                            <div class="account-dropdown-head">
+                                <strong>@(string.IsNullOrWhiteSpace(userEmail) ? "Tài khoản" : userEmail)</strong>
+                                <span>@(string.Equals(currentController, "Account", StringComparison.OrdinalIgnoreCase) ? "Khu vực thành viên" : "Mua sắm trực tuyến")</span>
+                            </div>
+                            <a asp-controller="Account" asp-action="Profile">Tài khoản của tôi</a>
+                            <a asp-controller="Account" asp-action="Orders">Đơn hàng của tôi</a>
+                            <a asp-controller="Account" asp-action="Addresses">Địa chỉ giao hàng</a>
+                            <a asp-controller="Account" asp-action="Password">Đổi mật khẩu</a>
+                            <a asp-controller="Account" asp-action="Logout">Đăng xuất</a>
+                        </div>
                     </div>
-                </div>
+                }
 
                 <div class="cart-menu">
                     <a class="icon-button cart-trigger" asp-controller="Home" asp-action="Cart" aria-label="Giỏ hàng">
@@ -117,35 +124,6 @@
             </div>
         </div>
     </header>
-        <div class="workspace">
-            <header class="workspace-header">
-                <div class="workspace-meta-left">
-                    <span>Cửa hàng: Khu vực A - Hà Nội</span>
-                </div>
-                <div class="workspace-meta-right">
-                    @{
-                        // Kiểm tra xem người dùng đã đăng nhập chưa
-                        var userId = Context.Session.GetString("UserId");
-                        var userEmail = Context.Session.GetString("UserEmail"); // Ta sẽ thêm cái này ở Controller
-                    }
-                    @if (string.IsNullOrEmpty(userId))
-                    {
-                        <a href="/Account/Login" class="btn btn-sm btn-outline-dark fw-bold">Đăng nhập</a>
-                        <a href="/Account/Register" class="btn btn-sm btn-dark fw-bold">Đăng ký</a>
-                    }
-                    else
-                    {
-                        <span class="text-primary fw-bold">
-                            <i class="bi bi-person-circle"></i> @(string.IsNullOrEmpty(userEmail) ? "Nhân viên" : userEmail)
-                        </span>
-                        <a href="/Account/Logout" class="btn btn-sm btn-danger fw-bold" title="Đăng xuất">
-                            <i class="bi bi-box-arrow-right"></i> Thoát
-                        </a>
-                    }
-                    <span class="text-muted border-start ps-3 ms-2">@DateTime.Now.ToString("dd/MM/yyyy")</span>
-                    <span class="text-muted fw-bold">@DateTime.Now.ToString("HH:mm")</span>                    
-                </div>
-            </header>
 
     <main class="store-main">
         @RenderBody()
@@ -155,7 +133,7 @@
         <div class="container store-footer-grid">
             <div>
                 <div class="store-footer-brand">Winter Shop</div>
-                <p class="footer-copy">Thời trang mùa đông tập trung vào áo khoác, áo len layer và các mẫu mặc hằng ngày dễ phối.</p>
+                <p class="footer-copy">Thời trang mùa đông tập trung vào áo khoác, áo len layer và các mẫu mặc hàng ngày dễ phối.</p>
             </div>
             <div>
                 <h4>Hỗ trợ</h4>

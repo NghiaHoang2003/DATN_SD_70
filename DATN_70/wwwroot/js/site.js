@@ -515,7 +515,18 @@
             window.location.href = "/Home/Cart";
             return;
         }
-        const profile = getProfile();
+        const serverProfile = window.checkoutBootstrap || {};
+        const localProfile = getProfile();
+        const profile = {
+            fullName: serverProfile.fullName || localProfile.fullName || "",
+            email: serverProfile.email || localProfile.email || "",
+            phone: serverProfile.phone || localProfile.phone || "",
+            street: serverProfile.street || localProfile.street || "",
+            province: serverProfile.province || localProfile.province || "",
+            district: serverProfile.district || localProfile.district || "",
+            ward: serverProfile.ward || localProfile.ward || ""
+        };
+        const savedAddresses = Array.isArray(serverProfile.savedAddresses) ? serverProfile.savedAddresses : [];
         const fullName = document.getElementById("checkoutFullName");
         const email = document.getElementById("checkoutEmail");
         const phone = document.getElementById("checkoutPhone");
@@ -523,26 +534,60 @@
         const province = document.getElementById("checkoutProvince");
         const district = document.getElementById("checkoutDistrict");
         const ward = document.getElementById("checkoutWard");
+        const selectedAddressId = document.getElementById("selectedAddressId");
+        const savedAddressList = document.getElementById("savedAddressList");
+        const useCustomAddressButton = document.getElementById("useCustomAddressButton");
         const shippingNode = document.getElementById("shippingOptions");
         const paymentNode = document.getElementById("paymentOptions");
         const couponInput = document.getElementById("checkoutCouponInput");
         const couponSuggestions = document.getElementById("couponSuggestions");
-        const fillProvince = () => {
-            province.innerHTML = provinces.map(item => `<option value="${item.value}">${escapeHtml(item.label)}</option>`).join("");
-            province.value = profile.province || provinces[0].value;
-            fillDistrict();
+        const syncAddressSelection = addressId => {
+            if (!savedAddressList) return;
+            savedAddressList.querySelectorAll("[data-address-id]").forEach(card => {
+                card.classList.toggle("active", card.dataset.addressId === addressId);
+            });
         };
-        const fillDistrict = () => {
+        const applyProfileToForm = nextProfile => {
+            fullName.value = nextProfile.fullName || "";
+            email.value = nextProfile.email || "";
+            phone.value = nextProfile.phone || "";
+            street.value = nextProfile.street || "";
+            fillProvince(nextProfile.province, nextProfile.district, nextProfile.ward);
+        };
+        const applySavedAddress = address => {
+            if (!address) return;
+            if (selectedAddressId) selectedAddressId.value = address.id || "";
+            applyProfileToForm({
+                fullName: address.recipientName || profile.fullName,
+                email: profile.email,
+                phone: address.phone || "",
+                street: address.street || "",
+                province: address.province || "",
+                district: address.district || "",
+                ward: address.ward || ""
+            });
+            syncAddressSelection(address.id || "");
+        };
+        const clearSavedAddressSelection = () => {
+            if (selectedAddressId) selectedAddressId.value = "";
+            syncAddressSelection("");
+        };
+        const fillProvince = (preferredProvince, preferredDistrict, preferredWard) => {
+            province.innerHTML = provinces.map(item => `<option value="${item.value}">${escapeHtml(item.label)}</option>`).join("");
+            province.value = preferredProvince || provinces[0].value;
+            fillDistrict(preferredDistrict, preferredWard);
+        };
+        const fillDistrict = (preferredDistrict, preferredWard) => {
             const currentProvince = provinces.find(item => item.value === province.value) || provinces[0];
             district.innerHTML = currentProvince.districts.map(item => `<option value="${item.value}">${escapeHtml(item.label)}</option>`).join("");
-            district.value = profile.district || currentProvince.districts[0].value;
-            fillWard();
+            district.value = preferredDistrict || currentProvince.districts[0].value;
+            fillWard(preferredWard);
         };
-        const fillWard = () => {
+        const fillWard = preferredWard => {
             const currentProvince = provinces.find(item => item.value === province.value) || provinces[0];
             const currentDistrict = currentProvince.districts.find(item => item.value === district.value) || currentProvince.districts[0];
             ward.innerHTML = currentDistrict.wards.map(item => `<option value="${item}">${escapeHtml(item)}</option>`).join("");
-            ward.value = profile.ward || currentDistrict.wards[0];
+            ward.value = preferredWard || currentDistrict.wards[0];
         };
         const render = () => {
             const cart = getCartState();
@@ -561,8 +606,37 @@
             }).join("");
             paymentNode.innerHTML = paymentMethods.map(item => `<label class="stack-option ${cart.paymentCode === item.code ? "active" : ""}"><div class="stack-option-copy"><strong>${escapeHtml(item.label)}</strong><span>${escapeHtml(item.note)}</span></div><input type="radio" name="paymentMethod" value="${item.code}" ${cart.paymentCode === item.code ? "checked" : ""} /></label>`).join("");
         };
-        province.addEventListener("change", fillDistrict);
-        district.addEventListener("change", fillWard);
+        province.addEventListener("change", () => {
+            fillDistrict();
+            clearSavedAddressSelection();
+        });
+        district.addEventListener("change", () => {
+            fillWard();
+            clearSavedAddressSelection();
+        });
+        [fullName, email, phone, street, ward].forEach(input => input.addEventListener("input", clearSavedAddressSelection));
+        if (savedAddressList) {
+            savedAddressList.addEventListener("click", event => {
+                const card = event.target.closest("[data-address-id]");
+                if (!card) return;
+                applySavedAddress({
+                    id: card.dataset.addressId,
+                    recipientName: card.dataset.recipient,
+                    phone: card.dataset.phone,
+                    street: card.dataset.street,
+                    province: card.dataset.province,
+                    district: card.dataset.district,
+                    ward: card.dataset.ward
+                });
+            });
+        }
+        if (useCustomAddressButton) {
+            useCustomAddressButton.addEventListener("click", () => {
+                clearSavedAddressSelection();
+                applyProfileToForm(profile);
+                street.focus();
+            });
+        }
         shippingNode.addEventListener("change", event => { const input = event.target.closest("[name='shippingMethod']"); if (!input) return; const cart = getCartState(); cart.shippingCode = input.value; saveCartState(cart); });
         paymentNode.addEventListener("change", event => { const input = event.target.closest("[name='paymentMethod']"); if (!input) return; const cart = getCartState(); cart.paymentCode = input.value; saveCartState(cart); });
         couponSuggestions.addEventListener("click", event => { const button = event.target.closest("[data-code]"); if (!button) return; couponInput.value = button.dataset.code; const cart = getCartState(); cart.couponCode = button.dataset.code; saveCartState(cart); });
@@ -606,12 +680,11 @@
                 button.textContent = "Hoàn tất đơn hàng";
             }
         });
-        fullName.value = profile.fullName || "";
-        email.value = profile.email || "";
-        phone.value = profile.phone || "";
-        street.value = profile.street || "";
         couponSuggestions.innerHTML = coupons.map(item => `<button type="button" class="coupon-chip" data-code="${item.code}">${item.code} · ${item.label}</button>`).join("");
-        fillProvince();
+        applyProfileToForm(profile);
+        if (serverProfile.selectedAddressId) {
+            syncAddressSelection(serverProfile.selectedAddressId);
+        }
         document.addEventListener("winterCartChanged", render);
         render();
     }
