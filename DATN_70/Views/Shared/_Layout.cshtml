@@ -21,6 +21,12 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body class="store-body">
+    <script>
+        window.storeSession = {
+            isAuthenticated: @(isAuthenticated ? "true" : "false"),
+            userId: "@(userId ?? string.Empty)"
+        };
+    </script>
     <header class="store-header">
         <div class="store-topbar">
             <div class="container store-topbar-inner">

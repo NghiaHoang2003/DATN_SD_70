@@ -33,11 +33,21 @@ public class HomeController : Controller
 
     public IActionResult Cart()
     {
+        if (!IsAuthenticated())
+        {
+            return RedirectToAction("Login", "Account");
+        }
+
         return View("~/Views/GioHang/Index.cshtml");
     }
 
     public async Task<IActionResult> Checkout()
     {
+        if (!IsAuthenticated())
+        {
+            return RedirectToAction("Login", "Account");
+        }
+
         var model = new CheckoutPageViewModel
         {
             Customer = await BuildCheckoutCustomerAsync()
@@ -119,6 +129,11 @@ public class HomeController : Controller
 
         var parts = address.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
         return parts.FirstOrDefault() ?? address;
+    }
+
+    private bool IsAuthenticated()
+    {
+        return !string.IsNullOrWhiteSpace(HttpContext.Session.GetString("UserId"));
     }
 }
 
