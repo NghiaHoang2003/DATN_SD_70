@@ -17,15 +17,32 @@ public sealed class StoreRepository : IStoreRepository
     public async Task<IReadOnlyList<ProductListItemResponse>> GetProductsAsync(CancellationToken cancellationToken)
     {
         const string sql = """
+            WITH ActivePromotions AS (
+                SELECT
+                    ksp.SanPhamID,
+                    MAX(km.PhanTramChietKhau) AS PhanTramGiam
+                FROM KhuyenMaiSanPhams ksp
+                INNER JOIN KhuyenMais km ON km.KhuyenMaiID = ksp.KhuyenMaiID
+                WHERE km.TrangThai = 1
+                  AND GETDATE() >= km.NgayApDung
+                  AND GETDATE() <= km.NgayKetThuc
+                GROUP BY ksp.SanPhamID
+            )
             SELECT
                 sp.SanPhamID,
                 sp.Ten,
                 sp.MoTa,
-                MIN(ctsp.GiaNiemYet) AS GiaThapNhat,
+                MIN(CASE
+                    WHEN ap.PhanTramGiam IS NULL THEN ctsp.GiaNiemYet
+                    ELSE ROUND(ctsp.GiaNiemYet * (100 - ap.PhanTramGiam) / 100.0, 0)
+                END) AS GiaThapNhat,
+                MIN(ctsp.GiaNiemYet) AS GiaGoc,
+                COALESCE(ap.PhanTramGiam, 0) AS PhanTramGiam,
                 SUM(ctsp.SoLuongTonKho) AS TongSoLuongTon
             FROM SanPhams sp
             LEFT JOIN ChiTietSanPhams ctsp ON ctsp.SanPhamID = sp.SanPhamID
-            GROUP BY sp.SanPhamID, sp.Ten, sp.MoTa
+            LEFT JOIN ActivePromotions ap ON ap.SanPhamID = sp.SanPhamID
+            GROUP BY sp.SanPhamID, sp.Ten, sp.MoTa, ap.PhanTramGiam
             ORDER BY sp.Ten;
             """;
 
@@ -45,7 +62,9 @@ public sealed class StoreRepository : IStoreRepository
                 Ten = reader.GetString(1),
                 MoTa = reader.IsDBNull(2) ? string.Empty : reader.GetString(2),
                 GiaThapNhat = reader.IsDBNull(3) ? 0 : reader.GetDecimal(3),
-                TongSoLuongTon = reader.IsDBNull(4) ? 0 : reader.GetInt32(4)
+                GiaGoc = reader.IsDBNull(4) ? 0 : reader.GetDecimal(4),
+                PhanTramGiam = reader.IsDBNull(5) ? 0 : reader.GetDecimal(5),
+                TongSoLuongTon = reader.IsDBNull(6) ? 0 : reader.GetInt32(6)
             });
         }
 
@@ -61,17 +80,34 @@ public sealed class StoreRepository : IStoreRepository
             """;
 
         const string variantSql = """
+            WITH ActivePromotions AS (
+                SELECT
+                    ksp.SanPhamID,
+                    MAX(km.PhanTramChietKhau) AS PhanTramGiam
+                FROM KhuyenMaiSanPhams ksp
+                INNER JOIN KhuyenMais km ON km.KhuyenMaiID = ksp.KhuyenMaiID
+                WHERE km.TrangThai = 1
+                  AND GETDATE() >= km.NgayApDung
+                  AND GETDATE() <= km.NgayKetThuc
+                GROUP BY ksp.SanPhamID
+            )
             SELECT
                 ctsp.ChiTietSanPhamID,
                 ctsp.KichCoID,
                 kc.Ten,
                 ctsp.MauID,
                 m.Ten,
-                ctsp.GiaNiemYet,
+                CASE
+                    WHEN ap.PhanTramGiam IS NULL THEN ctsp.GiaNiemYet
+                    ELSE ROUND(ctsp.GiaNiemYet * (100 - ap.PhanTramGiam) / 100.0, 0)
+                END AS GiaBan,
+                ctsp.GiaNiemYet AS GiaGoc,
+                COALESCE(ap.PhanTramGiam, 0) AS PhanTramGiam,
                 ctsp.SoLuongTonKho
             FROM ChiTietSanPhams ctsp
             INNER JOIN KichCos kc ON kc.KichCoID = ctsp.KichCoID
             INNER JOIN Maus m ON m.MauID = ctsp.MauID
+            LEFT JOIN ActivePromotions ap ON ap.SanPhamID = ctsp.SanPhamID
             WHERE ctsp.SanPhamID = @SanPhamID
             ORDER BY kc.Ten, m.Ten;
             """;
@@ -100,7 +136,9 @@ public sealed class StoreRepository : IStoreRepository
                 MauID = reader.GetString(3),
                 TenMau = reader.GetString(4),
                 GiaNiemYet = reader.GetDecimal(5),
-                SoLuongTon = reader.GetInt32(6)
+                GiaGoc = reader.GetDecimal(6),
+                PhanTramGiam = reader.GetDecimal(7),
+                SoLuongTon = reader.GetInt32(8)
             });
         }
 
@@ -235,9 +273,23 @@ public sealed class StoreRepository : IStoreRepository
         CancellationToken cancellationToken)
     {
         const string sql = """
-            SELECT GiaNiemYet, SoLuongTonKho
-            FROM ChiTietSanPhams WITH (UPDLOCK, ROWLOCK)
-            WHERE ChiTietSanPhamID = @ChiTietSanPhamID;
+            SELECT
+                CASE
+                    WHEN ap.PhanTramGiam IS NULL THEN ctsp.GiaNiemYet
+                    ELSE ROUND(ctsp.GiaNiemYet * (100 - ap.PhanTramGiam) / 100.0, 0)
+                END AS GiaBan,
+                ctsp.SoLuongTonKho
+            FROM ChiTietSanPhams ctsp WITH (UPDLOCK, ROWLOCK)
+            OUTER APPLY (
+                SELECT MAX(km.PhanTramChietKhau) AS PhanTramGiam
+                FROM KhuyenMaiSanPhams ksp
+                INNER JOIN KhuyenMais km ON km.KhuyenMaiID = ksp.KhuyenMaiID
+                WHERE ksp.SanPhamID = ctsp.SanPhamID
+                  AND km.TrangThai = 1
+                  AND GETDATE() >= km.NgayApDung
+                  AND GETDATE() <= km.NgayKetThuc
+            ) ap
+            WHERE ctsp.ChiTietSanPhamID = @ChiTietSanPhamID;
             """;
 
         await using var command = new SqlCommand(sql, connection, transaction);

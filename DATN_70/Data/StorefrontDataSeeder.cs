@@ -19,6 +19,8 @@ public sealed class StorefrontDataSeeder
 
     public async Task SeedAsync(CancellationToken cancellationToken = default)
     {
+        await EnsureBannerTableAsync(cancellationToken);
+        await SeedBannerAsync(cancellationToken);
         await SeedVaiTroAsync(cancellationToken);
         await SeedDanhMucAsync(cancellationToken);
         await SeedThuongHieuAsync(cancellationToken);
@@ -26,11 +28,79 @@ public sealed class StorefrontDataSeeder
         await SeedMauAsync(cancellationToken);
         await SeedSanPhamAsync(cancellationToken);
         await SeedChiTietSanPhamAsync(cancellationToken);
+        await SeedKhuyenMaiAsync(cancellationToken);
         await SeedTaiKhoanMauAsync(cancellationToken);
         await SeedKhachHangMauAsync(cancellationToken);
         await SeedDiaChiMauAsync(cancellationToken);
 
         _logger.LogInformation("Storefront seed data is ready with extended demo dataset.");
+    }
+
+    private async Task EnsureBannerTableAsync(CancellationToken cancellationToken)
+    {
+        const string sql = """
+            IF OBJECT_ID(N'dbo.Banners', N'U') IS NULL
+            BEGIN
+                CREATE TABLE dbo.Banners (
+                    BannerID nvarchar(36) NOT NULL PRIMARY KEY,
+                    TieuDe nvarchar(160) NOT NULL,
+                    MoTa nvarchar(300) NULL,
+                    HinhAnhUrl nvarchar(500) NOT NULL,
+                    LienKetUrl nvarchar(300) NULL,
+                    ThuTu int NOT NULL,
+                    KichHoat bit NOT NULL
+                );
+            END
+            """;
+
+        await _dbContext.Database.ExecuteSqlRawAsync(sql, cancellationToken);
+    }
+
+    private async Task SeedBannerAsync(CancellationToken cancellationToken)
+    {
+        var items = new[]
+        {
+            new Banner
+            {
+                BannerID = "BNR-001",
+                TieuDe = "Áo khoác mùa lạnh 2026",
+                MoTa = "Bộ sưu tập áo khoác mới cho mùa lạnh, tập trung vào chất liệu đẹp và tính thực dụng.",
+                HinhAnhUrl = "https://images.pexels.com/photos/6311392/pexels-photo-6311392.jpeg?auto=compress&cs=tinysrgb&w=1600",
+                LienKetUrl = "/Home/Products?category=outerwear",
+                ThuTu = 1,
+                KichHoat = true
+            },
+            new Banner
+            {
+                BannerID = "BNR-002",
+                TieuDe = "Phối lớp mùa lạnh",
+                MoTa = "Len, hoodie và các lớp mặc trong được cập nhật theo tiêu chí phối đồ nhanh và gọn.",
+                HinhAnhUrl = "https://images.pexels.com/photos/7691128/pexels-photo-7691128.jpeg?auto=compress&cs=tinysrgb&w=1600",
+                LienKetUrl = "/Home/Products?category=layering",
+                ThuTu = 2,
+                KichHoat = true
+            }
+        };
+
+        foreach (var item in items)
+        {
+            var existing = await _dbContext.Banners.FirstOrDefaultAsync(x => x.BannerID == item.BannerID, cancellationToken);
+            if (existing is null)
+            {
+                _dbContext.Banners.Add(item);
+            }
+            else
+            {
+                existing.TieuDe = item.TieuDe;
+                existing.MoTa = item.MoTa;
+                existing.HinhAnhUrl = item.HinhAnhUrl;
+                existing.LienKetUrl = item.LienKetUrl;
+                existing.ThuTu = item.ThuTu;
+                existing.KichHoat = item.KichHoat;
+            }
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
     private async Task SeedVaiTroAsync(CancellationToken cancellationToken)
@@ -332,6 +402,79 @@ public sealed class StorefrontDataSeeder
                 existing.QuanHuyen = item.QuanHuyen;
                 existing.PhuongXa = item.PhuongXa;
                 existing.LaMacDinh = item.LaMacDinh;
+            }
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task SeedKhuyenMaiAsync(CancellationToken cancellationToken)
+    {
+        var promotions = new[]
+        {
+            new KhuyenMai
+            {
+                KhuyenMaiID = "KM001",
+                Ten = "Outerwear Deep Sale",
+                PhanTramChietKhau = 30,
+                GiaTriToiThieuApDung = 0,
+                NgayApDung = DateTime.Today.AddDays(-30),
+                NgayKetThuc = DateTime.Today.AddDays(60),
+                MoTa = "Khuyen mai demo cho nhom ao khoac duoc cho phep giam gia.",
+                TrangThai = Models.Enums.Enums.TrangThaiHoatDong.HoatDong
+            },
+            new KhuyenMai
+            {
+                KhuyenMaiID = "KM002",
+                Ten = "Heattech Promo",
+                PhanTramChietKhau = 15,
+                GiaTriToiThieuApDung = 0,
+                NgayApDung = DateTime.Today.AddDays(-15),
+                NgayKetThuc = DateTime.Today.AddDays(45),
+                MoTa = "Khuyen mai demo cho nhom giu nhiet.",
+                TrangThai = Models.Enums.Enums.TrangThaiHoatDong.HoatDong
+            }
+        };
+
+        foreach (var item in promotions)
+        {
+            var existing = await _dbContext.KhuyenMais.FirstOrDefaultAsync(x => x.KhuyenMaiID == item.KhuyenMaiID, cancellationToken);
+            if (existing is null)
+            {
+                _dbContext.KhuyenMais.Add(item);
+            }
+            else
+            {
+                existing.Ten = item.Ten;
+                existing.PhanTramChietKhau = item.PhanTramChietKhau;
+                existing.GiaTriToiThieuApDung = item.GiaTriToiThieuApDung;
+                existing.NgayApDung = item.NgayApDung;
+                existing.NgayKetThuc = item.NgayKetThuc;
+                existing.MoTa = item.MoTa;
+                existing.TrangThai = item.TrangThai;
+            }
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        var links = new[]
+        {
+            new KhuyenMaiSanPham { KhuyenMaiID = "KM001", SanPhamID = "SP0001" },
+            new KhuyenMaiSanPham { KhuyenMaiID = "KM001", SanPhamID = "SP0010" },
+            new KhuyenMaiSanPham { KhuyenMaiID = "KM001", SanPhamID = "SP0019" },
+            new KhuyenMaiSanPham { KhuyenMaiID = "KM002", SanPhamID = "SP0009" },
+            new KhuyenMaiSanPham { KhuyenMaiID = "KM002", SanPhamID = "SP0023" }
+        };
+
+        foreach (var item in links)
+        {
+            var exists = await _dbContext.KhuyenMaiSanPhams.AnyAsync(
+                x => x.KhuyenMaiID == item.KhuyenMaiID && x.SanPhamID == item.SanPhamID,
+                cancellationToken);
+
+            if (!exists)
+            {
+                _dbContext.KhuyenMaiSanPhams.Add(item);
             }
         }
 

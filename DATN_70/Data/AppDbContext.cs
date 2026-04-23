@@ -23,6 +23,7 @@ namespace DATN_70.Data
         public DbSet<ChiTietGioHang> ChiTietGioHangs { get; set; }
         public DbSet<KhuyenMai> KhuyenMais { get; set; }
         public DbSet<KhuyenMaiSanPham> KhuyenMaiSanPhams { get; set; }
+        public DbSet<Banner> Banners { get; set; }
         public DbSet<DiaChi> DiaChis { get; set; }
         public DbSet<PhuongThucThanhToan> PhuongThucThanhToans { get; set; }
         public DbSet<ChiTietThanhToan> ChiTietThanhToans { get; set; }

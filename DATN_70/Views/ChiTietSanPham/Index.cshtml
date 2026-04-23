@@ -1,5 +1,5 @@
 @{
-    ViewData["Title"] = "Chi tiết sản phẩm";
+    ViewData["Title"] = "Chi tiet san pham";
     var productId = ViewData["ProductId"] as string ?? string.Empty;
 }
 
@@ -8,51 +8,51 @@
         <div class="detail-shell">
             <div class="detail-main">
                 <div class="detail-gallery-panel">
-                    <div id="detailArtwork" class="detail-artwork loading-state">Đang tải ảnh sản phẩm...</div>
+                    <div id="detailArtwork" class="detail-artwork loading-state">Dang tai anh san pham...</div>
                     <div id="detailGalleryThumbs" class="detail-thumbs"></div>
                 </div>
 
                 <div class="detail-info-panel">
                     <div class="detail-heading">
-                        <div id="detailBreadcrumb" class="detail-breadcrumb">Winter Shop / Sản phẩm</div>
-                        <h1 id="detailTitle">Đang tải sản phẩm...</h1>
+                        <div id="detailBreadcrumb" class="detail-breadcrumb">Winter Shop / San pham</div>
+                        <h1 id="detailTitle">Dang tai san pham...</h1>
                     </div>
 
                     <div class="detail-price-line">
-                        <strong id="detailPrice" class="detail-price">0 đ</strong>
+                        <strong id="detailPrice" class="detail-price">0 d</strong>
                         <span id="detailOriginalPrice" class="detail-original-price"></span>
                         <span id="detailDiscountBadge" class="sale-badge"></span>
                     </div>
 
-                    <div id="detailVariantSummary" class="detail-summary-copy">Giá mặc định theo biến thể rẻ nhất khả dụng.</div>
+                    <div id="detailVariantSummary" class="detail-summary-copy">Gia mac dinh theo bien the re nhat kha dung.</div>
 
                     <div class="detail-control">
-                        <div class="filter-label">Màu</div>
+                        <div class="filter-label">Mau</div>
                         <div id="detailColorOptions" class="option-grid"></div>
                     </div>
 
                     <div class="detail-control">
-                        <div class="filter-label">Kích cỡ</div>
+                        <div class="filter-label">Kich co</div>
                         <div id="detailSizeOptions" class="option-grid"></div>
                     </div>
 
                     <div class="detail-control quantity-control">
                         <div>
-                            <div class="filter-label">Số lượng</div>
+                            <div class="filter-label">So luong</div>
                             <div class="quantity-box">
                                 <button id="detailDecreaseQty" type="button">-</button>
-                                <input id="detailQuantityInput" type="number" min="1" step="1" value="1" />
+                                <span id="detailQuantityValue" class="quantity-value">1</span>
                                 <button id="detailIncreaseQty" type="button">+</button>
                             </div>
                         </div>
                         <div class="stock-note">
-                            <div class="filter-label">Tồn kho</div>
-                            <div id="detailStockNote">Đang kiểm tra...</div>
+                            <div class="filter-label">Ton kho</div>
+                            <div id="detailStockNote">Dang kiem tra...</div>
                         </div>
                     </div>
 
                     <div class="detail-actions">
-                        <button id="detailAddToCart" type="button" class="btn btn-ghost-dark">Thêm vào giỏ hàng</button>
+                        <button id="detailAddToCart" type="button" class="btn btn-ghost-dark">Them vao gio hang</button>
                         <button id="detailBuyNow" type="button" class="btn btn-dark-soft">Mua ngay</button>
                     </div>
                 </div>
@@ -60,19 +60,19 @@
 
             <div class="detail-extra">
                 <div class="detail-tabs">
-                    <button type="button" class="detail-tab active" data-tab="description">Mô tả sản phẩm</button>
-                    <button type="button" class="detail-tab" data-tab="returns">Chính sách đổi trả</button>
-                    <button type="button" class="detail-tab" data-tab="warranty">Chính sách bảo mật</button>
+                    <button type="button" class="detail-tab active" data-tab="description">Mo ta san pham</button>
+                    <button type="button" class="detail-tab" data-tab="returns">Chinh sach doi tra</button>
+                    <button type="button" class="detail-tab" data-tab="warranty">Chinh sach bao mat</button>
                 </div>
                 <div id="detailTabContent" class="detail-tab-content"></div>
             </div>
 
             <div class="related-products">
                 <div class="section-heading">
-                    <h2>Sản phẩm liên quan</h2>
+                    <h2>San pham lien quan</h2>
                 </div>
                 <div id="relatedProducts" class="product-row">
-                    <div class="empty-state">Đang tải sản phẩm liên quan...</div>
+                    <div class="empty-state">Dang tai san pham lien quan...</div>
                 </div>
             </div>
         </div>

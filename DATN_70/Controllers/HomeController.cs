@@ -15,9 +15,27 @@ public class HomeController : Controller
         _dbContext = dbContext;
     }
 
-    public IActionResult Index()
+    public async Task<IActionResult> Index()
     {
-        return View();
+        var model = new HomeIndexViewModel
+        {
+            Banners = await _dbContext.Banners
+                .AsNoTracking()
+                .Where(item => item.KichHoat)
+                .OrderBy(item => item.ThuTu)
+                .ThenBy(item => item.TieuDe)
+                .Select(item => new HomeBannerViewModel
+                {
+                    Id = item.BannerID,
+                    Title = item.TieuDe,
+                    Description = item.MoTa ?? string.Empty,
+                    ImageUrl = item.HinhAnhUrl,
+                    LinkUrl = string.IsNullOrWhiteSpace(item.LienKetUrl) ? "/Home/Products" : item.LienKetUrl
+                })
+                .ToListAsync()
+        };
+
+        return View(model);
     }
 
     public IActionResult Products()

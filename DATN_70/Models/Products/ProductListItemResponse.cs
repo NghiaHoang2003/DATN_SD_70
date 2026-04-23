@@ -10,5 +10,9 @@ public sealed class ProductListItemResponse
 
     public decimal GiaThapNhat { get; set; }
 
+    public decimal GiaGoc { get; set; }
+
+    public decimal PhanTramGiam { get; set; }
+
     public int TongSoLuongTon { get; set; }
 }

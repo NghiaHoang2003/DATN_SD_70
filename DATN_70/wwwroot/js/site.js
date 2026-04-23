@@ -11,6 +11,16 @@
         sweater: { url: "https://images.pexels.com/photos/29491953/pexels-photo-29491953.jpeg?auto=compress&cs=tinysrgb&w=1200", position: "center 10%" },
         vest: { url: "https://images.pexels.com/photos/5303811/pexels-photo-5303811.jpeg?auto=compress&cs=tinysrgb&w=1200", position: "center 12%" }
     };
+    const productPhotoMap = {
+        SP0001: {
+            default: { url: "https://images.pexels.com/photos/6311613/pexels-photo-6311613.jpeg?auto=compress&cs=tinysrgb&w=1200", position: "center 20%" },
+            variants: {
+                BLK: { url: "https://images.pexels.com/photos/6311613/pexels-photo-6311613.jpeg?auto=compress&cs=tinysrgb&w=1200", position: "center 20%" },
+                CRM: { url: "https://images.pexels.com/photos/7691228/pexels-photo-7691228.jpeg?auto=compress&cs=tinysrgb&w=1200", position: "center 24%" },
+                NVY: { url: "https://images.pexels.com/photos/6311392/pexels-photo-6311392.jpeg?auto=compress&cs=tinysrgb&w=1200", position: "center 18%" }
+            }
+        }
+    };
     const metaMap = {
         SP0001: { collection: "Arctic Edit", parentCategory: "outerwear", parentLabel: "Áo khoác ngoài", category: "ao-phao", categoryLabel: "Áo phao", badge: "Sale", tagline: "Giữ ấm tốt, phom hiện đại", toneA: "#d8e1ea", toneB: "#7d94a9", style: "parka", popularity: 97, originalFactor: 1.22, icon: "bi-box-seam" },
         SP0002: { collection: "City Luxe", parentCategory: "outerwear", parentLabel: "Áo khoác ngoài", category: "ao-da", categoryLabel: "Áo da", badge: "Mới", tagline: "Thanh lịch cho ngày lạnh", toneA: "#eadbcf", toneB: "#6d4b3f", style: "jacket", popularity: 94, originalFactor: 1.18, icon: "bi-stars" },
@@ -113,12 +123,24 @@
     const getTotalQuantity = (state = getCartState()) => state.items.reduce((sum, item) => sum + Number(item.soLuong || 0), 0);
     const getSubtotal = (state = getCartState()) => state.items.reduce((sum, item) => sum + Number(item.donGia || 0) * Number(item.soLuong || 0), 0);
 
-    function buildArtwork(product, mode) {
+    function getPhotoAsset(product, variant) {
+        const productId = typeof product === "string" ? product : product?.sanPhamID;
+        const mapped = productPhotoMap[productId];
+        if (mapped) {
+            const variantKey = variant?.mauID || variant?.mauId || variant?.tenMau || "";
+            return mapped.variants?.[variantKey] || mapped.default || null;
+        }
+
         const meta = getMeta(product);
-        const photo = stylePhotos[meta.style];
+        return stylePhotos[meta.style] || null;
+    }
+
+    function buildArtwork(product, mode, variant = null) {
+        const meta = getMeta(product);
+        const photo = getPhotoAsset(product, variant);
         const modeClass = mode === "large" ? " large" : mode === "compact" ? " compact" : "";
         if (photo) {
-            return `<div class="product-visual photo-mode${modeClass}" style="--tone-a:${meta.toneA};--tone-b:${meta.toneB};"><span class="product-badge">${escapeHtml(meta.badge)}</span><span class="visual-shape shape-one"></span><span class="visual-shape shape-two"></span><div class="product-photo-layer"><img class="product-photo" src="${photo.url}" alt="${escapeHtml(product?.ten || meta.categoryLabel)}" loading="lazy" style="object-position:${photo.position};" /></div></div>`;
+            return `<div class="product-visual photo-mode${modeClass}" style="--tone-a:${meta.toneA};--tone-b:${meta.toneB};"><div class="product-photo-layer"><img class="product-photo" src="${photo.url}" alt="${escapeHtml(product?.ten || meta.categoryLabel)}" loading="lazy" style="object-position:${photo.position};" /></div></div>`;
         }
         const hoodMarkup = meta.style === "hoodie" ? '<span class="hood"></span>' : "";
         const collarMarkup = meta.style === "coat" || meta.style === "jacket" || meta.style === "parka" ? '<span class="garment-collar collar-left"></span><span class="garment-collar collar-right"></span>' : "";
@@ -134,8 +156,8 @@
     function enrichProduct(product) {
         const meta = getMeta(product);
         const giaThapNhat = Number(product.giaThapNhat || 0);
-        const giaGoc = Math.round(giaThapNhat * meta.originalFactor);
-        return { ...product, meta, giaGoc, phanTramGiam: giaGoc > giaThapNhat ? Math.round((1 - giaThapNhat / giaGoc) * 100) : 0 };
+        const giaGoc = Number(product.giaGoc || giaThapNhat);
+        return { ...product, meta, giaGoc, phanTramGiam: Number(product.phanTramGiam || 0) };
     }
 
     async function fetchJson(url) {
@@ -224,16 +246,18 @@
         product.bienThe = Array.isArray(product.bienThe) ? product.bienThe.map(item => ({ ...item, sizeLabel: String(item.tenKichCo || "").replace(/^Size\s*/i, "").trim() })) : [];
         if (product.bienThe.length) {
             product.giaThapNhat = Math.min(...product.bienThe.map(item => Number(item.giaNiemYet || 0)));
+            product.giaGoc = Math.min(...product.bienThe.map(item => Number(item.giaGoc || item.giaNiemYet || 0)));
             product.tongSoLuongTon = product.bienThe.reduce((sum, item) => sum + Number(item.soLuongTon || 0), 0);
-            product.giaGoc = Math.round(product.giaThapNhat * product.meta.originalFactor);
-            product.phanTramGiam = product.giaGoc > product.giaThapNhat ? Math.round((1 - product.giaThapNhat / product.giaGoc) * 100) : 0;
+            product.phanTramGiam = Math.max(...product.bienThe.map(item => Number(item.phanTramGiam || 0)));
         }
         return product;
     }
 
     function renderProductCard(product) {
         const detailUrl = `/Home/Details?id=${encodeURIComponent(product.sanPhamID)}`;
-        return `<article class="product-card"><a class="product-card-link" href="${detailUrl}" aria-label="Xem chi tiết ${escapeHtml(product.ten)}">${buildArtwork(product, "card")}<div class="product-info"><div class="price-stack"><span class="sale-badge">-${product.phanTramGiam}%</span><span class="muted-copy">${escapeHtml(product.meta.categoryLabel)}</span></div><span class="product-name">${escapeHtml(product.ten)}</span><div class="product-copy">${escapeHtml(product.meta.tagline)}</div><div class="price-stack"><strong class="price-sale">${formatCurrency(product.giaThapNhat)}</strong><span class="price-original">${formatCurrency(product.giaGoc)}</span></div></div></a></article>`;
+        const discountBadge = product.phanTramGiam > 0 ? `<span class="sale-badge">-${product.phanTramGiam}%</span>` : "";
+        const originalPrice = product.phanTramGiam > 0 ? `<span class="price-original">${formatCurrency(product.giaGoc)}</span>` : "";
+        return `<article class="product-card"><a class="product-card-link" href="${detailUrl}" aria-label="Xem chi tiết ${escapeHtml(product.ten)}">${buildArtwork(product, "card")}<div class="product-info"><div class="price-stack">${discountBadge}<span class="muted-copy">${escapeHtml(product.meta.categoryLabel)}</span></div><span class="product-name">${escapeHtml(product.ten)}</span><div class="product-copy">${escapeHtml(product.meta.tagline)}</div><div class="price-stack"><strong class="price-sale">${formatCurrency(product.giaThapNhat)}</strong>${originalPrice}</div></div></a></article>`;
     }
 
     function showToast(message, type = "info") {
@@ -293,6 +317,19 @@
         }
         const matches = products.filter(product => product.ten.toLowerCase().includes(term) || product.meta.categoryLabel.toLowerCase().includes(term)).slice(0, 5);
         node.innerHTML = matches.length ? matches.map(product => `<a class="header-search-item" href="/Home/Details?id=${encodeURIComponent(product.sanPhamID)}"><div class="thumb-wrap">${buildArtwork(product, "compact")}</div><div><strong>${escapeHtml(product.ten)}</strong><div class="item-meta">${escapeHtml(product.meta.parentLabel)}</div><div class="price-sale">${formatCurrency(product.giaThapNhat)}</div></div></a>`).join("") : '<div class="header-search-empty">Không tìm thấy sản phẩm phù hợp.</div>';
+    }
+
+    function renderFixedProductRow(items, slotCount = 4) {
+        if (!items.length) {
+            return '<div class="empty-state">Khong co san pham phu hop.</div>';
+        }
+
+        const markup = items.slice(0, slotCount).map(renderProductCard);
+        while (markup.length < slotCount) {
+            markup.push('<article class="product-card placeholder-card" aria-hidden="true"></article>');
+        }
+
+        return markup.join("");
     }
 
     async function addItemToCart(product, variant, quantity) {
@@ -366,16 +403,52 @@
     function initHome(productsPromise) {
         const page = document.getElementById("homePage");
         if (!page) return;
+        const bannerCount = Number(page.dataset.bannerCount || 0);
+        if (bannerCount > 1) {
+            const slides = [...page.querySelectorAll(".hero-slide")];
+            const dots = [...page.querySelectorAll(".hero-dot")];
+            const navButtons = [...page.querySelectorAll(".hero-nav-button")];
+            const interval = Number(page.querySelector(".hero-banner")?.dataset.interval || 7000);
+            let activeSlide = 0;
+            let timer = null;
+            const setActiveSlide = index => {
+                activeSlide = index;
+                slides.forEach((slide, slideIndex) => slide.classList.toggle("active", slideIndex === index));
+                dots.forEach((dot, dotIndex) => dot.classList.toggle("active", dotIndex === index));
+            };
+            const restartTimer = () => {
+                if (timer) window.clearInterval(timer);
+                timer = window.setInterval(() => {
+                    setActiveSlide((activeSlide + 1) % slides.length);
+                }, interval);
+            };
+            restartTimer();
+            dots.forEach(dot => {
+                dot.addEventListener("click", () => {
+                    setActiveSlide(Number(dot.dataset.slideTo || 0));
+                    restartTimer();
+                });
+            });
+            navButtons.forEach(button => {
+                button.addEventListener("click", () => {
+                    const direction = button.dataset.slideDirection === "prev" ? -1 : 1;
+                    setActiveSlide((activeSlide + direction + slides.length) % slides.length);
+                    restartTimer();
+                });
+            });
+        }
         productsPromise.then(products => {
-            page.querySelectorAll(".mini-art").forEach(node => { node.innerHTML = buildArtwork({ sanPhamID: node.dataset.product }, "compact"); });
             document.getElementById("homeCategories").innerHTML = categories.map(category => `<a class="category-card" href="/Home/Products?category=${category.key}"><div class="category-icon"><i class="bi ${escapeHtml(category.icon)}"></i></div><strong>${escapeHtml(category.label)}</strong><span>${escapeHtml(category.description)}</span></a>`).join("");
-            document.getElementById("homeFeaturedProducts").innerHTML = products.slice().sort((a, b) => b.phanTramGiam - a.phanTramGiam).slice(0, 4).map(renderProductCard).join("");
+            const deepDeals = products
+                .filter(item => Number(item.phanTramGiam || 0) >= 25)
+                .sort((a, b) => Number(b.phanTramGiam || 0) - Number(a.phanTramGiam || 0));
+            document.getElementById("homeFeaturedProducts").innerHTML = renderFixedProductRow(deepDeals, 4);
             const tabsNode = document.getElementById("homeTabs");
             const listNode = document.getElementById("homeTabProducts");
             let active = categories[0].key;
             const render = () => {
                 tabsNode.innerHTML = categories.map(category => `<button type="button" class="chip-button ${active === category.key ? "active" : ""}" data-key="${category.key}">${escapeHtml(category.label)}</button>`).join("");
-                listNode.innerHTML = products.filter(item => item.meta.parentCategory === active).slice(0, 8).map(renderProductCard).join("");
+                listNode.innerHTML = renderFixedProductRow(products.filter(item => item.meta.parentCategory === active), 4);
             };
             tabsNode.addEventListener("click", event => {
                 const button = event.target.closest("[data-key]");
@@ -482,10 +555,21 @@
             returns: () => `<ul><li>Đổi size trong 7 ngày nếu sản phẩm còn nguyên tem.</li><li>Không đổi trực tiếp màu và size trong giỏ hàng.</li><li>Đơn đổi trả phụ thuộc tồn kho thời điểm xử lý.</li></ul>`,
             warranty: () => `<ul><li>Thông tin khách hàng chỉ dùng để xử lý đơn hàng.</li><li>Dữ liệu checkout gần nhất được lưu cục bộ để tự điền lại.</li><li>Thanh toán online trong bản demo là mô phỏng giao diện.</li></ul>`
         };
+        const getDetailQuantity = () => Number(document.getElementById("detailQuantityValue")?.textContent || 1);
+        const setDetailQuantity = nextValue => {
+            const node = document.getElementById("detailQuantityValue");
+            if (!node) return;
+            node.textContent = String(nextValue);
+        };
         const getSelected = () => product.bienThe.find(item => item.tenMau === selectedColor && item.sizeLabel === selectedSize) || null;
         const renderTabs = () => {
             page.querySelectorAll(".detail-tab").forEach(button => button.classList.toggle("active", button.dataset.tab === activeTab));
             document.getElementById("detailTabContent").innerHTML = tabContent[activeTab](product);
+        };
+        const renderGallery = () => {
+            const uniqueByColor = [...new Map(product.bienThe.map(item => [item.mauID, item])).values()];
+            document.getElementById("detailGalleryThumbs").innerHTML = uniqueByColor.map(item => `<button type="button" class="detail-thumb-button ${selectedColor === item.tenMau ? "active" : ""}" data-color="${escapeHtml(item.tenMau)}">${buildArtwork(product, "compact", item)}</button>`).join("");
+            document.getElementById("detailArtwork").innerHTML = buildArtwork(product, "large", getSelected());
         };
         const renderVariant = () => {
             const variant = getSelected();
@@ -493,7 +577,6 @@
             const sizes = [...new Set(product.bienThe.filter(item => item.tenMau === selectedColor).map(item => item.sizeLabel))];
             document.getElementById("detailColorOptions").innerHTML = colors.map(color => `<button type="button" class="option-button ${selectedColor === color ? "active" : ""}" data-color="${escapeHtml(color)}">${escapeHtml(color)}</button>`).join("");
             document.getElementById("detailSizeOptions").innerHTML = sizes.map(size => `<button type="button" class="option-button ${selectedSize === size ? "active" : ""}" data-size="${size}">${escapeHtml(size)}</button>`).join("");
-            const qty = document.getElementById("detailQuantityInput");
             const add = document.getElementById("detailAddToCart");
             const buy = document.getElementById("detailBuyNow");
             if (!variant) {
@@ -505,16 +588,15 @@
                 buy.disabled = true;
                 return;
             }
-            const giaGoc = Math.round(variant.giaNiemYet * product.meta.originalFactor);
             document.getElementById("detailPrice").textContent = formatCurrency(variant.giaNiemYet);
-            document.getElementById("detailOriginalPrice").textContent = formatCurrency(giaGoc);
-            document.getElementById("detailDiscountBadge").textContent = `-${Math.round((1 - variant.giaNiemYet / giaGoc) * 100)}%`;
+            document.getElementById("detailOriginalPrice").textContent = Number(variant.phanTramGiam || 0) > 0 ? formatCurrency(variant.giaGoc) : "";
+            document.getElementById("detailDiscountBadge").textContent = Number(variant.phanTramGiam || 0) > 0 ? `-${variant.phanTramGiam}%` : "";
             document.getElementById("detailVariantSummary").textContent = `Đã chọn ${variant.tenMau} / ${variant.sizeLabel}. Giá thay đổi theo biến thể này.`;
             document.getElementById("detailStockNote").textContent = `Còn ${variant.soLuongTon} sản phẩm · Tối đa mỗi đơn 20 sản phẩm.`;
-            qty.max = Math.min(20, variant.soLuongTon);
-            qty.value = clamp(Number(qty.value) || 1, 1, Math.max(1, Math.min(20, variant.soLuongTon)));
+            setDetailQuantity(clamp(getDetailQuantity(), 1, Math.max(1, Math.min(20, variant.soLuongTon))));
             add.disabled = variant.soLuongTon < 1;
             buy.disabled = variant.soLuongTon < 1;
+            renderGallery();
         };
         fetchProduct(productId).then(detail => {
             product = detail;
@@ -525,10 +607,9 @@
             }
             selectedColor = variant.tenMau;
             selectedSize = variant.sizeLabel;
-            document.getElementById("detailArtwork").innerHTML = buildArtwork(product, "large");
-            document.getElementById("detailGalleryThumbs").innerHTML = [1, 2, 3, 4].map(() => `<div class="mini-art">${buildArtwork(product, "compact")}</div>`).join("");
             document.getElementById("detailTitle").textContent = product.ten.toUpperCase();
             document.getElementById("detailBreadcrumb").textContent = `Winter Shop / ${product.meta.parentLabel} / ${product.meta.categoryLabel}`;
+            setDetailQuantity(1);
             renderVariant();
             renderTabs();
             productsPromise.then(products => {
@@ -553,6 +634,14 @@
             selectedSize = button.dataset.size;
             renderVariant();
         });
+        document.getElementById("detailGalleryThumbs").addEventListener("click", event => {
+            const button = event.target.closest("[data-color]");
+            if (!button || !product) return;
+            selectedColor = button.dataset.color;
+            const sizes = [...new Set(product.bienThe.filter(item => item.tenMau === selectedColor).map(item => item.sizeLabel))];
+            if (!sizes.includes(selectedSize)) selectedSize = sizes[0];
+            renderVariant();
+        });
         page.querySelector(".detail-tabs").addEventListener("click", event => {
             const button = event.target.closest("[data-tab]");
             if (!button || !product) return;
@@ -560,23 +649,23 @@
             renderTabs();
         });
         document.getElementById("detailDecreaseQty").addEventListener("click", () => {
-            const input = document.getElementById("detailQuantityInput");
-            input.value = clamp((Number(input.value) || 1) - 1, 1, Number(input.max) || 20);
+            const variant = product ? getSelected() : null;
+            setDetailQuantity(clamp(getDetailQuantity() - 1, 1, Math.min(20, Number(variant?.soLuongTon || 20))));
         });
         document.getElementById("detailIncreaseQty").addEventListener("click", () => {
-            const input = document.getElementById("detailQuantityInput");
-            input.value = clamp((Number(input.value) || 1) + 1, 1, Number(input.max) || 20);
+            const variant = product ? getSelected() : null;
+            setDetailQuantity(clamp(getDetailQuantity() + 1, 1, Math.min(20, Number(variant?.soLuongTon || 20))));
         });
         document.getElementById("detailAddToCart").addEventListener("click", async () => {
             const variant = product ? getSelected() : null;
             if (!variant) return showToast("Vui lòng chọn màu và kích cỡ khả dụng.", "warning");
-            if (!await addItemToCart(product, variant, document.getElementById("detailQuantityInput").value)) return;
+            if (!await addItemToCart(product, variant, getDetailQuantity())) return;
             showToast("Đã thêm sản phẩm vào giỏ hàng.", "success");
         });
         document.getElementById("detailBuyNow").addEventListener("click", async () => {
             const variant = product ? getSelected() : null;
             if (!variant) return showToast("Vui lòng chọn màu và kích cỡ khả dụng.", "warning");
-            if (!await addItemToCart(product, variant, document.getElementById("detailQuantityInput").value)) return;
+            if (!await addItemToCart(product, variant, getDetailQuantity())) return;
             window.location.href = "/Home/Cart";
         });
     }

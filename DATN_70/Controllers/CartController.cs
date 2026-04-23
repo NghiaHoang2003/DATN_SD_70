@@ -70,19 +70,21 @@ public sealed class CartController : ControllerBase
 
         if (line is null)
         {
+            var currentUnitPrice = await GetCurrentUnitPriceAsync(variant, cancellationToken);
             _dbContext.ChiTietGioHangs.Add(new ChiTietGioHang
             {
                 ChiTietGioHangID = Guid.NewGuid().ToString(),
                 GioHangID = cart.GioHangID,
                 ChiTietSanPhamID = variant.ChiTietSanPhamID,
                 SoLuong = request.SoLuong,
-                TongTien = variant.GiaNiemYet * request.SoLuong
+                TongTien = currentUnitPrice * request.SoLuong
             });
         }
         else
         {
+            var currentUnitPrice = await GetCurrentUnitPriceAsync(variant, cancellationToken);
             line.SoLuong = nextQuantity;
-            line.TongTien = variant.GiaNiemYet * nextQuantity;
+            line.TongTien = currentUnitPrice * nextQuantity;
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
@@ -134,7 +136,7 @@ public sealed class CartController : ControllerBase
         }
 
         line.SoLuong = request.SoLuong;
-        line.TongTien = variant.GiaNiemYet * request.SoLuong;
+        line.TongTien = await GetCurrentUnitPriceAsync(variant, cancellationToken) * request.SoLuong;
         await _dbContext.SaveChangesAsync(cancellationToken);
         return Ok(await BuildCartResponseAsync(cart.GioHangID, cancellationToken));
     }
@@ -233,6 +235,10 @@ public sealed class CartController : ControllerBase
             .ThenBy(item => item.ChiTietSanPham.KichCo.Ten)
             .ToListAsync(cancellationToken);
 
+        var discounts = await GetActiveDiscountsAsync(
+            items.Select(item => item.ChiTietSanPham.SanPhamID).Distinct().ToList(),
+            cancellationToken);
+
         return new CartResponse
         {
             Items = items.Select(item => new CartItemResponse
@@ -242,9 +248,50 @@ public sealed class CartController : ControllerBase
                 TenSanPham = item.ChiTietSanPham.SanPham.Ten,
                 PhanLoai = $"{item.ChiTietSanPham.Mau.Ten} / {item.ChiTietSanPham.KichCo.Ten.Replace("Size ", string.Empty)}",
                 SoLuong = item.SoLuong,
-                DonGia = item.ChiTietSanPham.GiaNiemYet,
+                DonGia = ApplyDiscount(item.ChiTietSanPham.GiaNiemYet, discounts.GetValueOrDefault(item.ChiTietSanPham.SanPhamID)),
                 TonKho = item.ChiTietSanPham.SoLuongTonKho
             }).ToList()
         };
+    }
+
+    private async Task<decimal> GetCurrentUnitPriceAsync(ChiTietSanPham variant, CancellationToken cancellationToken)
+    {
+        var discounts = await GetActiveDiscountsAsync([variant.SanPhamID], cancellationToken);
+        return ApplyDiscount(variant.GiaNiemYet, discounts.GetValueOrDefault(variant.SanPhamID));
+    }
+
+    private async Task<Dictionary<string, decimal>> GetActiveDiscountsAsync(
+        IReadOnlyCollection<string> productIds,
+        CancellationToken cancellationToken)
+    {
+        if (productIds.Count == 0)
+        {
+            return new Dictionary<string, decimal>();
+        }
+
+        var now = DateTime.Now;
+        return await _dbContext.KhuyenMaiSanPhams
+            .AsNoTracking()
+            .Where(item => productIds.Contains(item.SanPhamID)
+                && item.KhuyenMai.TrangThai == Models.Enums.Enums.TrangThaiHoatDong.HoatDong
+                && item.KhuyenMai.NgayApDung <= now
+                && item.KhuyenMai.NgayKetThuc >= now)
+            .GroupBy(item => item.SanPhamID)
+            .Select(group => new
+            {
+                SanPhamID = group.Key,
+                PhanTramGiam = group.Max(item => item.KhuyenMai.PhanTramChietKhau)
+            })
+            .ToDictionaryAsync(item => item.SanPhamID, item => item.PhanTramGiam, cancellationToken);
+    }
+
+    private static decimal ApplyDiscount(decimal basePrice, decimal discountPercent)
+    {
+        if (discountPercent <= 0)
+        {
+            return basePrice;
+        }
+
+        return Math.Round(basePrice * (100 - discountPercent) / 100m, 0, MidpointRounding.AwayFromZero);
     }
 }

@@ -14,5 +14,9 @@ public sealed class ProductVariantResponse
 
     public decimal GiaNiemYet { get; set; }
 
+    public decimal GiaGoc { get; set; }
+
+    public decimal PhanTramGiam { get; set; }
+
     public int SoLuongTon { get; set; }
 }
