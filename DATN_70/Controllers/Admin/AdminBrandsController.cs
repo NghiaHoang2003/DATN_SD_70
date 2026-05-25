@@ -9,7 +9,7 @@ namespace DATN_70.Controllers.Admin
 {
     [ApiController]
     [Route("api/admin/brands")]
-    [CustomAuthorize("R01", "R02")]
+    [CustomAuthorize("R01")]
     public class AdminBrandsController : ControllerBase
     {
         private readonly AppDbContext _context;

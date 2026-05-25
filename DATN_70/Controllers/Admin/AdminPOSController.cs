@@ -45,7 +45,7 @@ public class AdminPOSController : ControllerBase
                 .ThenInclude(sp => sp.HinhAnhSanPhams)
             .Include(ct => ct.KichCo)
             .Include(ct => ct.Mau)
-            .Where(ct => ct.SoLuongTonKho > 0)
+            .Where(ct => ct.SoLuongTonKho > 0 && ct.SanPham.IsActive)
             .Select(ct => new
             {
                 ct.ChiTietSanPhamID,

@@ -9,7 +9,7 @@ namespace DATN_70.Controllers.Admin
 {
     [ApiController]
     [Route("api/admin/sizes")]
-    [CustomAuthorize("R01", "R02")]
+    [CustomAuthorize("R01")]
     public class AdminSizesController : ControllerBase
     {
         private readonly AppDbContext _context;

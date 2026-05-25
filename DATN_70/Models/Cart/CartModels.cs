@@ -18,6 +18,7 @@ public sealed class CartItemResponse
     public int TonKho { get; set; }
     public decimal GiaGoc { get; set; }
     public int VatRate { get; set; }
+    public bool IsActive { get; set; } = true;
 }
 
 public sealed class AddCartItemRequest

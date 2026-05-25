@@ -11,7 +11,7 @@ namespace DATN_70.Controllers;
 public sealed class CartController : ControllerBase
 {
     private readonly AppDbContext _dbContext;
-
+    
     public CartController(AppDbContext dbContext)
     {
         _dbContext = dbContext;
@@ -290,7 +290,9 @@ public sealed class CartController : ControllerBase
                     DonGia = finalPrice,          // giá sau khuyến mãi
                     GiaGoc = basePrice,           // giá gốc để hiển thị nếu cần
                     VatRate = vatRate,            // để tính VAT
-                    TonKho = item.ChiTietSanPham.SoLuongTonKho
+                    TonKho = item.ChiTietSanPham.SoLuongTonKho,
+                    IsActive = item.ChiTietSanPham.SanPham.IsActive
+
                 };
             }).ToList()
         };

@@ -134,14 +134,14 @@ public sealed class AdminOrdersController : ControllerBase
 
         string action = request.Action?.Trim().ToLowerInvariant() ?? string.Empty;
 
+        // ========== 1. CHUYỂN TRẠNG THÁI TIẾP THEO ==========
         if (action == "next")
         {
+            // Không thể chuyển tiếp nếu đã kết thúc
             if (order.TrangThai == Enums.TrangThaiHoaDon.HoanThanh || order.TrangThai == Enums.TrangThaiHoaDon.DaHuy)
-            {
                 return BadRequest(new { message = "Đơn hàng đã kết thúc tiến trình." });
-            }
 
-            // Nếu duyệt đơn từ Chờ xác nhận (0) -> Đã xác nhận (1) thì tiến hành trừ kho
+            // Nếu đang từ Chờ duyệt (0) -> Xác nhận (1): trừ tồn kho
             if (order.TrangThai == Enums.TrangThaiHoaDon.ChoDuyet)
             {
                 var chiTietList = await _dbContext.HoaDonChiTiets
@@ -153,61 +153,54 @@ public sealed class AdminOrdersController : ControllerBase
                     var ctsp = await _dbContext.ChiTietSanPhams
                         .FirstOrDefaultAsync(ct => ct.ChiTietSanPhamID == item.ChiTietSanPhamID);
                     if (ctsp != null)
-                    {
                         ctsp.SoLuongTonKho -= item.SoLuong;
-                    }
                 }
             }
 
             order.TrangThai = (Enums.TrangThaiHoaDon)((int)order.TrangThai + 1);
         }
+        // ========== 2. GIAO THẤT BẠI (Delivery Failed) ==========
         else if (action == "fail")
         {
             if (order.TrangThai != Enums.TrangThaiHoaDon.DangGiao)
-            {
                 return BadRequest(new { message = "Chỉ đơn hàng đang giao mới có thể đánh dấu giao thất bại." });
-            }
 
-            // Cộng lại tồn kho vì hàng đã về
-            var chiTietList = await _dbContext.HoaDonChiTiets
-                .Where(hdct => hdct.HoaDonID == order.HoaDonID)
-                .ToListAsync();
-
-            foreach (var item in chiTietList)
-            {
-                var ctsp = await _dbContext.ChiTietSanPhams
-                    .FirstOrDefaultAsync(ct => ct.ChiTietSanPhamID == item.ChiTietSanPhamID);
-                if (ctsp != null)
-                {
-                    ctsp.SoLuongTonKho += item.SoLuong;
-                }
-            }
-
+            // ❌ KHÔNG cộng tồn kho vì hàng chưa về shop
             order.TrangThai = Enums.TrangThaiHoaDon.GiaoHangThatBai;
         }
+        // ========== 3. PHÁT LẠI (Redeliver) ==========
+        else if (action == "redeliver")
+        {
+            if (order.TrangThai != Enums.TrangThaiHoaDon.GiaoHangThatBai)
+                return BadRequest(new { message = "Chỉ đơn hàng giao thất bại mới có thể yêu cầu phát lại." });
+
+            // Quay về trạng thái Đang giao
+            order.TrangThai = Enums.TrangThaiHoaDon.DangGiao;
+        }
+        // ========== 4. HẸN GIAO LẠI (Reschedule) ==========
         else if (action == "reschedule")
         {
             if (order.TrangThai != Enums.TrangThaiHoaDon.DangGiao)
-            {
                 return BadRequest(new { message = "Chỉ đơn hàng đang giao mới có thể hẹn giao lại." });
-            }
 
+            // Nối thêm ghi chú thay vì ghi đè
             if (!string.IsNullOrWhiteSpace(request.GhiChu))
             {
-                order.GhiChu = request.GhiChu.Trim();
+                var timestamp = DateTime.Now.ToString("dd/MM/yyyy HH:mm");
+                order.GhiChu = (order.GhiChu + $"\n[{timestamp}] {request.GhiChu.Trim()}").Trim();
             }
 
             await _dbContext.SaveChangesAsync(cancellationToken);
             return Ok(new { message = "Đã lưu ghi chú hẹn giao lại.", currentStatusKey = GetStatusKey(order.TrangThai), currentStatusLabel = GetStatusLabel(order.TrangThai) });
         }
+        // ========== 5. HỦY ĐƠN ==========
         else if (action == "cancel")
         {
-            if (order.TrangThai >= Enums.TrangThaiHoaDon.DangGiao)
-            {
-                return BadRequest(new { message = "Đơn hàng đang giao, không thể hủy." });
-            }
+            // Cho phép hủy ở mọi trạng thái trừ Hoàn thành và Đã hủy
+            if (order.TrangThai == Enums.TrangThaiHoaDon.HoanThanh || order.TrangThai == Enums.TrangThaiHoaDon.DaHuy)
+                return BadRequest(new { message = "Không thể hủy đơn hàng đã hoàn thành hoặc đã hủy." });
 
-            // Nếu đơn đã được xác nhận (1) hoặc đang chuẩn bị (2) thì cần trả lại tồn kho
+            // Chỉ cộng lại tồn kho nếu hàng còn trong kho (các trạng thái trước khi giao)
             if (order.TrangThai == Enums.TrangThaiHoaDon.DaXacNhan || order.TrangThai == Enums.TrangThaiHoaDon.DangChuanBi)
             {
                 var chiTietList = await _dbContext.HoaDonChiTiets
@@ -219,13 +212,16 @@ public sealed class AdminOrdersController : ControllerBase
                     var ctsp = await _dbContext.ChiTietSanPhams
                         .FirstOrDefaultAsync(ct => ct.ChiTietSanPhamID == item.ChiTietSanPhamID);
                     if (ctsp != null)
-                    {
                         ctsp.SoLuongTonKho += item.SoLuong;
-                    }
                 }
             }
+            // Nếu đang giao hoặc giao thất bại: không cộng tồn kho (hàng chưa về)
 
             order.TrangThai = Enums.TrangThaiHoaDon.DaHuy;
+        }
+        else
+        {
+            return BadRequest(new { message = "Hành động không hợp lệ." });
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken);

@@ -10,7 +10,7 @@ namespace DATN_70.Controllers.Admin;
 
 [ApiController]
 [Route("api/admin/products")]
-[CustomAuthorize("R01", "R02")]
+[CustomAuthorize("R01")]
 public sealed class AdminProductsController : ControllerBase
 {
     private readonly AppDbContext _context;
@@ -34,7 +34,8 @@ public sealed class AdminProductsController : ControllerBase
                 s.Ten,
                 DanhMuc = s.DanhMuc.Ten,
                 ThuongHieu = s.ThuongHieu.Ten,
-                SoBienThe = _context.ChiTietSanPhams.Count(ct => ct.SanPhamID == s.SanPhamID)
+                SoBienThe = _context.ChiTietSanPhams.Count(ct => ct.SanPhamID == s.SanPhamID),
+                s.IsActive
             })
             .ToListAsync();
         return result;
@@ -286,7 +287,17 @@ public sealed class AdminProductsController : ControllerBase
         await _context.SaveChangesAsync();
         return Ok(new { message = "Cập nhật sản phẩm thành công!" });
     }
+    [HttpPut("{id}/toggle-active")]
+    public async Task<IActionResult> ToggleActive(string id)
+    {
+        var product = await _context.SanPhams.FindAsync(id);
+        if (product == null) return NotFound(new { message = "Không tìm thấy sản phẩm." });
 
+        product.IsActive = !product.IsActive;
+        await _context.SaveChangesAsync();
+
+        return Ok(new { isActive = product.IsActive, message = product.IsActive ? "Đã hiển thị sản phẩm." : "Đã ẩn sản phẩm." });
+    }
     // 5. XÓA VĨNH VIỄN SẢN PHẨM KHỎI HỆ THỐNG (DELETE)
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(string id)

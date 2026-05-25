@@ -83,10 +83,6 @@
 
     // Hàm bổ trợ check ảnh an toàn chống lỗi 404 truyền chuỗi "undefined"
     function getSafeProductImgUrl(item) {
-        const colorId = item.mauID || item.mauId || "";
-        if (item.sanPhamID && colorId && colorId !== "undefined") {
-            return `/images/products/${item.sanPhamID}-${colorId}.png`;
-        }
         return item.hinhAnhUrl || item.imageUrl || '/images/default-product.png';
     }
 
@@ -238,7 +234,15 @@
         const container = document.getElementById("cartItemsContainer");
         const noteInput = document.getElementById("cartOrderNote");
         const checkoutLink = document.getElementById("cartCheckoutLink");
-
+        checkoutLink.addEventListener('click', function (e) {
+            const state = getCartState();
+            const inactiveItems = state.items.filter(item => item.isActive === false);
+            if (inactiveItems.length > 0) {
+                e.preventDefault();
+                const names = inactiveItems.map(i => i.tenSanPham).join(', ');
+                alert(`Sản phẩm "${names}" đã ngừng bán, vui lòng xóa khỏi giỏ hàng trước khi thanh toán.`);
+            }
+        });
         const render = () => {
             const state = getCartState();
             document.getElementById("cartHeadCount").textContent = getTotalQuantity(state);
@@ -262,22 +266,30 @@
             checkoutLink.style.pointerEvents = state.items.length ? "auto" : "none";
             checkoutLink.style.opacity = state.items.length ? "1" : "0.6";
 
-            container.innerHTML = state.items.length ? state.items.map(item => `
-                    <article class="cart-item d-flex align-items-center gap-3 mb-3 border-bottom pb-3">
-                        <div class="thumb-wrap" style="width: 80px; height: 80px; flex-shrink: 0;">
-                            <img src="${getSafeProductImgUrl(item)}" onerror="this.src='/images/default-product.png'" alt="${escapeHtml(item.tenSanPham)}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;" />
-                        </div>
-                        <div style="flex: 1;">
-                            <a class="product-name text-dark fw-bold text-decoration-none" href="/Home/Details?id=${encodeURIComponent(item.sanPhamID)}">${escapeHtml(item.tenSanPham)}</a>
-                            <div class="item-meta text-muted small mb-2">${escapeHtml(item.phanLoai)}</div>
-                            <div class="cart-qty-actions d-flex gap-3 align-items-center">
-                                <input class="form-control form-control-sm text-center cart-qty-input" style="width: 70px;" type="number" min="0" max="${Math.min(20, item.tonKho || 20)}" value="${item.soLuong}" data-id="${item.chiTietSanPhamID}" />
-                                <button type="button" class="btn btn-sm btn-outline-danger cart-remove-btn" data-id="${item.chiTietSanPhamID}">Xóa</button>
-                            </div>
-                        </div>
-                        <strong class="price-sale fs-5 text-danger">${formatCurrency(item.donGia * item.soLuong)}</strong>
-                    </article>
-                `).join("") : '<div class="empty-state text-center py-5">Giỏ hàng đang trống.</div>';
+            container.innerHTML = state.items.length ? state.items.map(item => {
+                const isInactive = item.isActive === false;
+                const inactiveWarning = isInactive ?
+                    '<div class="text-danger small mt-1"><i class="bi bi-exclamation-triangle-fill me-1"></i> Sản phẩm đã ngừng bán, vui lòng xóa</div>' : '';
+                const rowClass = isInactive ? 'bg-light border border-danger rounded-3 p-2' : '';
+                return `
+        <article class="cart-item d-flex align-items-center gap-3 mb-3 border-bottom pb-3 ${rowClass}">
+            <!-- giữ nguyên phần ảnh, tên, số lượng... -->
+            <div class="thumb-wrap" style="width: 80px; height: 80px; flex-shrink: 0;">
+                <img src="${getSafeProductImgUrl(item)}" onerror="this.src='/images/default-product.png'" alt="${escapeHtml(item.tenSanPham)}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;" />
+            </div>
+            <div style="flex: 1;">
+                <a class="product-name text-dark fw-bold text-decoration-none" href="/Home/Details?id=${encodeURIComponent(item.sanPhamID)}">${escapeHtml(item.tenSanPham)}</a>
+                <div class="item-meta text-muted small mb-2">${escapeHtml(item.phanLoai)}</div>
+                <div class="cart-qty-actions d-flex gap-3 align-items-center">
+                    <input class="form-control form-control-sm text-center cart-qty-input" style="width: 70px;" type="number" min="0" max="${Math.min(20, item.tonKho || 20)}" value="${item.soLuong}" data-id="${item.chiTietSanPhamID}" ${isInactive ? 'disabled' : ''} />
+                    <button type="button" class="btn btn-sm btn-outline-danger cart-remove-btn" data-id="${item.chiTietSanPhamID}">Xóa</button>
+                </div>
+                ${inactiveWarning}
+            </div>
+            <strong class="price-sale fs-5 text-danger">${formatCurrency(item.donGia * item.soLuong)}</strong>
+        </article>
+    `;
+            }).join("") : '<div class="empty-state text-center py-5">Giỏ hàng đang trống.</div>';
         };
 
         container.addEventListener("change", async event => {
@@ -473,15 +485,15 @@
             const uniqueByColor = [...new Map(product.bienThe.map(item => [item.mauID || item.mauId, item])).values()];
 
             document.getElementById("detailGalleryThumbs").innerHTML = uniqueByColor.map(item => {
-                const mID = item.mauID || item.mauId;
-                const thumbImgUrl = `/images/products/${product.sanPhamID}-${mID}.png`;
+                // ✅ Sửa dòng này
+                const thumbImgUrl = item.hinhAnhUrl || '/images/default-product.png';
                 const isActiveClass = selectedColor === item.tenMau ? "border-dark border-2 shadow-sm" : "opacity-60";
 
                 return `
-                        <button type="button" class="btn p-0 border rounded-2 overflow-hidden ${isActiveClass}" data-color="${escapeHtml(item.tenMau)}" style="width: 55px; height: 55px; transition: all 0.15s;">
-                            <img src="${thumbImgUrl}" onerror="this.src='/images/default-product.png'" class="w-100 h-100 object-fit-cover" />
-                        </button>
-                    `;
+            <button type="button" class="btn p-0 border rounded-2 overflow-hidden ${isActiveClass}" data-color="${escapeHtml(item.tenMau)}" style="width: 55px; height: 55px; transition: all 0.15s;">
+                <img src="${thumbImgUrl}" onerror="this.src='/images/default-product.png'" class="w-100 h-100 object-fit-cover" />
+            </button>
+        `;
             }).join("");
         };
 
@@ -513,8 +525,8 @@
             add.disabled = variant.soLuongTon < 1;
             buy.disabled = variant.soLuongTon < 1;
 
-            const mID = variant.mauID || variant.mauId;
-            const imgUrl = `/images/products/${product.sanPhamID}-${mID}.png`;
+            // ✅ Sửa dòng này
+            const imgUrl = variant.hinhAnhUrl || '/images/default-product.png';
             document.getElementById("detailArtwork").innerHTML = `<img src="${imgUrl}" onerror="this.src='/images/default-product.png'" class="img-fluid w-100 h-100 object-fit-cover shadow-sm animate-fade" alt="Ảnh sản phẩm">`;
 
             renderGallery();

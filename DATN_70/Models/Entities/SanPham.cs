@@ -29,6 +29,7 @@ namespace DATN_70.Models.Entities
 
         public ThuongHieu ThuongHieu { get; set; }
         public DanhMuc DanhMuc { get; set; }
+        public bool IsActive { get; set; } = true;
 
         public ICollection<ChiTietSanPham> ChiTietSanPhams { get; set; }
         public ICollection<KhuyenMaiSanPham> KhuyenMaiSanPhams { get; set; }

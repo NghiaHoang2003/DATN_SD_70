@@ -168,13 +168,17 @@ public class AccountController : Controller
         }
 
         // Phân quyền sau đăng nhập
-        if (user.VaiTroID == "R01" || user.VaiTroID == "R02")
+        if (user.VaiTroID == "R01")
         {
-            return RedirectToAction("Dashboard", "Admin");
+            return RedirectToAction("Dashboard", "Admin"); // Admin -> Dashboard
+        }
+        else if (user.VaiTroID == "R02")
+        {
+            return RedirectToAction("Orders", "Admin"); // Nhân viên -> Quản lý hóa đơn
         }
         else
         {
-            return RedirectToAction("Index", "Home");
+            return RedirectToAction("Index", "Home"); // Khách hàng -> Trang chủ
         }
     }
 

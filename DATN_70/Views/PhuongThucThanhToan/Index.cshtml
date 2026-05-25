@@ -388,9 +388,12 @@
         });
 
         // Hàm render giỏ hàng ra giao diện
-        function renderCheckoutItems() {
+                function renderCheckoutItems() {
             const cartState = window.winterCart ? window.winterCart.getCartState() : { items: [] };
             const container = document.getElementById('checkoutItems');
+            const placeOrderBtn = document.getElementById('placeOrderButton');
+            const summaryMsg = document.getElementById('checkoutSummaryMessage');
+
             if (container && cartState.items.length > 0) {
                 container.innerHTML = cartState.items.map(item => `
                     <article class="checkout-item d-flex align-items-center gap-3" data-vat-rate="${item.vatRate || 10}">
@@ -403,12 +406,36 @@
                         <div style="flex: 1;">
                             <div class="product-name fw-bold text-dark" style="font-size: 0.9rem;">${item.tenSanPham}</div>
                             <div class="item-meta text-muted" style="font-size: 0.8rem;">${item.phanLoai} · SL: ${item.soLuong}</div>
+                            ${item.isActive === false ? '<div class="text-danger small mt-1"><i class="bi bi-exclamation-triangle-fill me-1"></i> Sản phẩm đã ngừng bán</div>' : ''}
                         </div>
                         <strong class="price-sale text-danger">${(item.donGia * item.soLuong).toLocaleString('vi-VN')} đ</strong>
                     </article>
                 `).join('');
                 const subtotal = cartState.items.reduce((sum, i) => sum + (i.donGia * i.soLuong), 0);
                 document.getElementById('checkoutSubtotal').textContent = subtotal.toLocaleString('vi-VN') + ' đ';
+
+                // Kiểm tra có sản phẩm bị ẩn không
+                const hasInactive = cartState.items.some(item => item.isActive === false);
+                if (hasInactive) {
+                    if (placeOrderBtn) {
+                        placeOrderBtn.disabled = true;
+                        placeOrderBtn.textContent = 'Không thể đặt hàng';
+                        placeOrderBtn.classList.add('btn-secondary');
+                        placeOrderBtn.classList.remove('btn-dark');
+                    }
+                    if (summaryMsg) {
+                        summaryMsg.innerHTML = '<div class="alert alert-danger small py-2 mb-0"><i class="bi bi-exclamation-triangle-fill me-1"></i> Giỏ hàng có sản phẩm đã ngừng bán. Vui lòng quay lại giỏ hàng để xóa.</div>';
+                    }
+                } else {
+                    if (placeOrderBtn) {
+                        placeOrderBtn.disabled = false;
+                        placeOrderBtn.textContent = 'Đặt hàng ngay';
+                        placeOrderBtn.classList.remove('btn-secondary');
+                        placeOrderBtn.classList.add('btn-dark');
+                    }
+                    if (summaryMsg) summaryMsg.innerHTML = '';
+                }
+
                 const pSelect = document.getElementById('checkoutProvince');
                 if (pSelect && pSelect.value) pSelect.dispatchEvent(new Event('change'));
             }
@@ -531,8 +558,21 @@
         // ==========================================
         let isPlacingOrder = false;
 
+        // ==========================================
+        // LOGIC ĐẶT HÀNG & THANH TOÁN QR (CHỐNG F5)
+        // ==========================================
+        let isPlacingOrder = false;
+
         document.getElementById('placeOrderButton').addEventListener('click', async function() {
             if (isPlacingOrder) return;
+
+            // Kiểm tra sản phẩm đã ẩn trước khi đặt
+            const cartState = window.winterCart ? window.winterCart.getCartState() : { items: [] };
+            const inactiveItems = cartState.items.filter(item => item.isActive === false);
+            if (inactiveItems.length > 0) {
+                alert(`Sản phẩm "${inactiveItems.map(i => i.tenSanPham).join(', ')}" đã ngừng bán, vui lòng xóa khỏi giỏ hàng.`);
+                return;
+            }
 
             const fullName = document.getElementById('checkoutFullName').value.trim();
             const phone = document.getElementById('checkoutPhone').value.trim();
@@ -558,7 +598,6 @@
                 const formData = { fullName, phone, street, province, district, ward, addressId, khachHangId, paymentMethod };
                 sessionStorage.setItem('checkoutFormData', JSON.stringify(formData));
 
-                const cartState = window.winterCart ? window.winterCart.getCartState() : { items: [] };
                 const cartItems = cartState.items.map(item => ({
                     chiTietSanPhamID: item.chiTietSanPhamID,
                     soLuong: item.soLuong
@@ -576,8 +615,7 @@
                             diaChiGiaoHang: `${street}, ${ward}, ${district}, ${province}`,
                             items: cartItems,
                             paymentMethod: 'QR',
-                            shippingFee: currentShippingFee,
-                            // voucherCodes: appliedCoupons.map(c => c.maCode)
+                            shippingFee: currentShippingFee
                         })
                     });
                     const orderResult = await orderResponse.json();
@@ -600,6 +638,24 @@
                         sessionStorage.setItem('pendingHoaDonID', orderResult.hoaDonID);
                         document.getElementById('webPayOSIframe').src = paymentResult.checkoutUrl;
                         new bootstrap.Modal(document.getElementById('webQrModal')).show();
+
+                        // 🔥 ĐOẠN CODE MỚI THÊM: DÒ TRẠNG THÁI VÀ TỰ ĐÓNG POPUP
+                        const checkInterval = setInterval(async () => {
+                            try {
+                                const checkRes = await fetch(`/api/admin/orders/${orderResult.hoaDonID}`);
+                                if (checkRes.ok) {
+                                    const orderDetail = await checkRes.json();
+                                    // Đóng nếu không còn ở trạng thái QR_Pending
+                                    if (orderDetail.trangThaiKey !== "qr_pending" && orderDetail.trangThaiKey !== "cancelled") {
+                                        clearInterval(checkInterval);
+                                        const modal = bootstrap.Modal.getInstance(document.getElementById('webQrModal'));
+                                        if (modal) modal.hide();
+                                        window.location.href = `/Account/Orders?message=Thanh toán thành công! Chúng tôi đang chuẩn bị hàng cho bạn.`;
+                                    }
+                                }
+                            } catch (err) { console.error("Lỗi dò trạng thái:", err); }
+                        }, 3000);
+
                     } else {
                         alert("Lỗi tạo link thanh toán: " + paymentResult.message);
                     }
@@ -615,8 +671,7 @@
                             diaChiGiaoHang: `${street}, ${ward}, ${district}, ${province}`,
                             items: cartItems,
                             paymentMethod: 'COD',
-                            shippingFee: currentShippingFee,
-                            // voucherCodes: appliedCoupons.map(c => c.maCode)
+                            shippingFee: currentShippingFee
                         })
                     });
                     const orderResult = await orderResponse.json();

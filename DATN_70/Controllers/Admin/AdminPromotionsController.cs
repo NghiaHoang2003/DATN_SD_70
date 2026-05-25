@@ -10,7 +10,7 @@ namespace DATN_70.Controllers.Admin;
 
 [ApiController]
 [Route("api/admin/promotions")]
-[CustomAuthorize("R01", "R02")]
+[CustomAuthorize("R01")]
 public sealed class AdminPromotionsController : ControllerBase
 {
     private readonly AppDbContext _dbContext;

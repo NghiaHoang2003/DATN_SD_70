@@ -8,7 +8,7 @@ namespace DATN_70.Controllers.Admin;
 
 [ApiController]
 [Route("api/admin/accounts")]
-[CustomAuthorize("R01", "R02")]
+[CustomAuthorize("R01")]
 public sealed class AdminAccountsController : ControllerBase
 {
     private readonly AppDbContext _dbContext;

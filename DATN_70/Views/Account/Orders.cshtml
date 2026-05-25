@@ -306,6 +306,7 @@
             });
         });
                 // Xử lý nút "Thanh toán ngay" cho đơn QR
+        // Xử lý nút "Thanh toán ngay" cho đơn QR
         $(document).on('click', '.btn-pay-qr', async function() {
             const orderId = $(this).data('order-id');
             const btn = $(this);
@@ -318,6 +319,7 @@
                     body: JSON.stringify({ hoaDonID: orderId })
                 });
                 const result = await response.json();
+
                 if (result.success) {
                     // Lưu vào sessionStorage để chống F5
                     sessionStorage.setItem('pendingPayOSOrderCode', result.orderCode);
@@ -327,6 +329,25 @@
                     const iframe = document.getElementById('webPayOSIframe');
                     iframe.src = result.checkoutUrl;
                     new bootstrap.Modal(document.getElementById('webQrModal')).show();
+
+                    // 🔥 ĐOẠN CODE MỚI THÊM: DÒ TRẠNG THÁI VÀ TỰ ĐÓNG POPUP
+                    const checkInterval = setInterval(async () => {
+                        try {
+                            const checkRes = await fetch(`/api/admin/orders/${orderId}`);
+                            if (checkRes.ok) {
+                                const orderDetail = await checkRes.json();
+                                if (orderDetail.trangThaiKey !== "qr_pending" && orderDetail.trangThaiKey !== "cancelled") {
+                                    clearInterval(checkInterval);
+                                    const modal = bootstrap.Modal.getInstance(document.getElementById('webQrModal'));
+                                    if (modal) modal.hide();
+
+                                    alert("Thanh toán thành công! Chúng tôi đã nhận được tiền.");
+                                    location.reload(); // Tải lại trang để mất nút thanh toán
+                                }
+                            }
+                        } catch (err) { console.error("Lỗi dò trạng thái:", err); }
+                    }, 3000);
+
                 } else {
                     alert("Lỗi tạo link thanh toán: " + result.message);
                 }

@@ -412,6 +412,11 @@ public class HomeController : Controller
                     .FirstOrDefaultAsync(c => c.ChiTietSanPhamID == item.ChiTietSanPhamID, cancellationToken);
 
                 if (ctsp == null) return BadRequest(new { message = $"Không tìm thấy sản phẩm." });
+                // Kiểm tra sản phẩm đã bị ẩn (ngừng bán)
+                if (!ctsp.SanPham.IsActive)
+                {
+                    return BadRequest(new { message = $"Sản phẩm \"{ctsp.SanPham.Ten}\" đã ngừng bán, vui lòng xóa khỏi giỏ hàng trước khi đặt hàng." });
+                }
                 if (ctsp.SoLuongTonKho < item.SoLuong) return BadRequest(new { message = $"Sản phẩm {ctsp.SanPham.Ten} không đủ số lượng tồn kho." });
 
                 ctsp.SoLuongTonKho -= item.SoLuong;

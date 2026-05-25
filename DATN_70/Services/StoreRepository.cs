@@ -39,7 +39,7 @@ public sealed class StoreRepository : IStoreRepository
                     ctsp.SanPhamID,
                     ctsp.GiaNiemYet,
                     ctsp.SoLuongTonKho,
-                    (ctsp.GiaNiemYet - TinhGia.MucGiamTotNhat) AS GiaBan,
+                    IIF(ctsp.GiaNiemYet - TinhGia.MucGiamTotNhat < 0, CAST(0 AS DECIMAL(18,2)), ctsp.GiaNiemYet - TinhGia.MucGiamTotNhat) AS GiaBan,
                     COALESCE(
                         CASE 
                             WHEN TinhGia.NguonGiam = 'SP' AND app.LoaiGiamGia = 1 THEN CAST(app.GiaTriGiam AS DECIMAL(18,2))
@@ -82,11 +82,17 @@ public sealed class StoreRepository : IStoreRepository
                 COALESCE(MAX(vp.LoaiGiamGia), -1) AS LoaiGiamGia,
                 COALESCE(MAX(vp.GiaTriGiam), CAST(0 AS DECIMAL(18,2))) AS GiaTriGiam,
                 COALESCE(MAX(vp.GiamToiDa), CAST(0 AS DECIMAL(18,2))) AS GiamToiDa,
-                SUM(vp.SoLuongTonKho) AS TongSoLuongTon
+                SUM(vp.SoLuongTonKho) AS TongSoLuongTon,
+                COALESCE(
+                    (SELECT TOP 1 h.Url FROM HinhAnhSanPhams h 
+                     WHERE h.SanPhamID = sp.SanPhamID 
+                     ORDER BY h.IsMain DESC, h.HinhAnhID),
+                    '/images/default-product.png'
+                ) AS HinhAnhDaiDien
             FROM SanPhams sp
             LEFT JOIN VariantPrices vp ON sp.SanPhamID = vp.SanPhamID
+            WHERE sp.IsActive = 1
             GROUP BY sp.SanPhamID, sp.Ten, sp.MoTa
-            ORDER BY sp.Ten;
             """;
 
             var products = new List<ProductListItemResponse>();
@@ -102,15 +108,14 @@ public sealed class StoreRepository : IStoreRepository
                     SanPhamID = reader.IsDBNull(0) ? string.Empty : reader.GetString(0),
                     Ten = reader.IsDBNull(1) ? string.Empty : reader.GetString(1),
                     MoTa = reader.IsDBNull(2) ? string.Empty : reader.GetString(2),
-
-                    // Dùng Convert.GetValue để chống mọi lỗi InvalidCastException
                     GiaThapNhat = reader.IsDBNull(3) ? 0m : Convert.ToDecimal(reader.GetValue(3)),
                     GiaGoc = reader.IsDBNull(4) ? 0m : Convert.ToDecimal(reader.GetValue(4)),
                     PhanTramGiam = reader.IsDBNull(5) ? 0m : Convert.ToDecimal(reader.GetValue(5)),
                     LoaiGiamGia = reader.IsDBNull(6) ? -1 : Convert.ToInt32(reader.GetValue(6)),
                     GiaTriGiam = reader.IsDBNull(7) ? 0m : Convert.ToDecimal(reader.GetValue(7)),
                     GiamToiDa = reader.IsDBNull(8) ? 0m : Convert.ToDecimal(reader.GetValue(8)),
-                    TongSoLuongTon = reader.IsDBNull(9) ? 0 : Convert.ToInt32(reader.GetValue(9))
+                    TongSoLuongTon = reader.IsDBNull(9) ? 0 : Convert.ToInt32(reader.GetValue(9)),
+                    HinhAnhDaiDien = reader.IsDBNull(10) ? "/images/default-product.png" : reader.GetString(10)
                 });
             }
             return products;
@@ -126,72 +131,79 @@ public sealed class StoreRepository : IStoreRepository
         try
         {
             const string productSql = """
-            SELECT SanPhamID, Ten, MoTa
-            FROM SanPhams
-            WHERE SanPhamID = @SanPhamID;
-            """;
+        SELECT SanPhamID, Ten, MoTa
+        FROM SanPhams
+        WHERE SanPhamID = @SanPhamID AND IsActive = 1;
+        """;
 
             const string variantSql = """
-            WITH ActiveGlobalPromo AS (
-                SELECT TOP 1 * FROM KhuyenMais
-                WHERE MaCode IS NULL AND TrangThai = 1 
-                  AND GETDATE() >= NgayApDung AND GETDATE() <= NgayKetThuc
-                  AND (SoLuongToiDa = 0 OR SoLuongDaDung < SoLuongToiDa)
-            ),
-            ActiveProductPromo AS (
-                SELECT ksp.SanPhamID, km.LoaiGiamGia, km.GiaTriGiam, km.GiamToiDa,
-                       ROW_NUMBER() OVER(PARTITION BY ksp.SanPhamID ORDER BY km.GiaTriGiam DESC) as rn
-                FROM KhuyenMaiSanPhams ksp
-                INNER JOIN KhuyenMais km ON km.KhuyenMaiID = ksp.KhuyenMaiID
-                WHERE km.MaCode IS NOT NULL AND km.TrangThai = 1
-                  AND GETDATE() >= km.NgayApDung AND GETDATE() <= km.NgayKetThuc
-                  AND (km.SoLuongToiDa = 0 OR km.SoLuongDaDung < km.SoLuongToiDa)
-            )
+        WITH ActiveGlobalPromo AS (
+            SELECT TOP 1 * FROM KhuyenMais
+            WHERE MaCode IS NULL AND TrangThai = 1 
+              AND GETDATE() >= NgayApDung AND GETDATE() <= NgayKetThuc
+              AND (SoLuongToiDa = 0 OR SoLuongDaDung < SoLuongToiDa)
+        ),
+        ActiveProductPromo AS (
+            SELECT ksp.SanPhamID, km.LoaiGiamGia, km.GiaTriGiam, km.GiamToiDa,
+                   ROW_NUMBER() OVER(PARTITION BY ksp.SanPhamID ORDER BY km.GiaTriGiam DESC) as rn
+            FROM KhuyenMaiSanPhams ksp
+            INNER JOIN KhuyenMais km ON km.KhuyenMaiID = ksp.KhuyenMaiID
+            WHERE km.MaCode IS NOT NULL AND km.TrangThai = 1
+              AND GETDATE() >= km.NgayApDung AND GETDATE() <= km.NgayKetThuc
+              AND (km.SoLuongToiDa = 0 OR km.SoLuongDaDung < km.SoLuongToiDa)
+        )
+        SELECT 
+            ctsp.ChiTietSanPhamID, 
+            ctsp.KichCoID, 
+            kc.Ten, 
+            ctsp.MauID, 
+            m.Ten,
+            IIF(ctsp.GiaNiemYet - TinhGia.MucGiamTotNhat < 0, CAST(0 AS DECIMAL(18,2)), CAST(ctsp.GiaNiemYet - TinhGia.MucGiamTotNhat AS DECIMAL(18,2))) AS GiaBan,
+            CAST(ctsp.GiaNiemYet AS DECIMAL(18,2)) AS GiaGoc,
+            COALESCE(
+                CASE 
+                    WHEN TinhGia.NguonGiam = 'SP' AND app.LoaiGiamGia = 1 THEN CAST(app.GiaTriGiam AS DECIMAL(18,2))
+                    WHEN TinhGia.NguonGiam = 'SP' AND app.LoaiGiamGia = 0 AND ctsp.GiaNiemYet > 0 THEN CAST((app.GiaTriGiam / ctsp.GiaNiemYet) * 100.0 AS DECIMAL(18,2))
+                    WHEN TinhGia.NguonGiam = 'SAN' AND agp.LoaiGiamGia = 1 THEN CAST(agp.GiaTriGiam AS DECIMAL(18,2))
+                    WHEN TinhGia.NguonGiam = 'SAN' AND agp.LoaiGiamGia = 0 AND ctsp.GiaNiemYet > 0 THEN CAST((agp.GiaTriGiam / ctsp.GiaNiemYet) * 100.0 AS DECIMAL(18,2))
+                    ELSE CAST(0 AS DECIMAL(18,2)) 
+                END, CAST(0 AS DECIMAL(18,2))
+            ) AS PhanTramGiam,
+            COALESCE(IIF(TinhGia.NguonGiam = 'SP', app.LoaiGiamGia, agp.LoaiGiamGia), -1) AS LoaiGiamGia,
+            COALESCE(IIF(TinhGia.NguonGiam = 'SP', app.GiaTriGiam, agp.GiaTriGiam), CAST(0 AS DECIMAL(18,2))) AS GiaTriGiam,
+            COALESCE(IIF(TinhGia.NguonGiam = 'SP', app.GiamToiDa, agp.GiamToiDa), CAST(0 AS DECIMAL(18,2))) AS GiamToiDa,
+            -- Ảnh đại diện cho biến thể (theo màu, ưu tiên ảnh chính) - CHỈ MỘT DÒNG DUY NHẤT
+            COALESCE(
+                (SELECT TOP 1 h.Url FROM HinhAnhSanPhams h 
+                 WHERE h.SanPhamID = ctsp.SanPhamID AND (h.MauID = ctsp.MauID OR h.MauID IS NULL)
+                 ORDER BY h.IsMain DESC, h.HinhAnhID),
+                '/images/default-product.png'
+            ) AS HinhAnhUrl,
+            ctsp.SoLuongTonKho
+        FROM ChiTietSanPhams ctsp
+        INNER JOIN KichCos kc ON kc.KichCoID = ctsp.KichCoID
+        INNER JOIN Maus m ON m.MauID = ctsp.MauID
+        LEFT JOIN ActiveGlobalPromo agp ON 1 = 1
+        LEFT JOIN ActiveProductPromo app ON app.SanPhamID = ctsp.SanPhamID AND app.rn = 1
+        CROSS APPLY (
             SELECT 
-                ctsp.ChiTietSanPhamID, 
-                ctsp.KichCoID, 
-                kc.Ten, 
-                ctsp.MauID, 
-                m.Ten,
-                CAST((ctsp.GiaNiemYet - TinhGia.MucGiamTotNhat) AS DECIMAL(18,2)) AS GiaBan,
-                CAST(ctsp.GiaNiemYet AS DECIMAL(18,2)) AS GiaGoc,
-                COALESCE(
-                    CASE 
-                        WHEN TinhGia.NguonGiam = 'SP' AND app.LoaiGiamGia = 1 THEN CAST(app.GiaTriGiam AS DECIMAL(18,2))
-                        WHEN TinhGia.NguonGiam = 'SP' AND app.LoaiGiamGia = 0 AND ctsp.GiaNiemYet > 0 THEN CAST((app.GiaTriGiam / ctsp.GiaNiemYet) * 100.0 AS DECIMAL(18,2))
-                        WHEN TinhGia.NguonGiam = 'SAN' AND agp.LoaiGiamGia = 1 THEN CAST(agp.GiaTriGiam AS DECIMAL(18,2))
-                        WHEN TinhGia.NguonGiam = 'SAN' AND agp.LoaiGiamGia = 0 AND ctsp.GiaNiemYet > 0 THEN CAST((agp.GiaTriGiam / ctsp.GiaNiemYet) * 100.0 AS DECIMAL(18,2))
-                        ELSE CAST(0 AS DECIMAL(18,2)) 
-                    END, CAST(0 AS DECIMAL(18,2))
-                ) AS PhanTramGiam,
-                COALESCE(IIF(TinhGia.NguonGiam = 'SP', app.LoaiGiamGia, agp.LoaiGiamGia), -1) AS LoaiGiamGia,
-                COALESCE(IIF(TinhGia.NguonGiam = 'SP', app.GiaTriGiam, agp.GiaTriGiam), CAST(0 AS DECIMAL(18,2))) AS GiaTriGiam,
-                COALESCE(IIF(TinhGia.NguonGiam = 'SP', app.GiamToiDa, agp.GiamToiDa), CAST(0 AS DECIMAL(18,2))) AS GiamToiDa,
-                ctsp.SoLuongTonKho
-            FROM ChiTietSanPhams ctsp
-            INNER JOIN KichCos kc ON kc.KichCoID = ctsp.KichCoID
-            INNER JOIN Maus m ON m.MauID = ctsp.MauID
-            LEFT JOIN ActiveGlobalPromo agp ON 1 = 1
-            LEFT JOIN ActiveProductPromo app ON app.SanPhamID = ctsp.SanPhamID AND app.rn = 1
-            CROSS APPLY (
-                SELECT 
-                    CASE WHEN agp.GiaTriGiam IS NULL THEN CAST(0 AS DECIMAL(18,2))
-                         WHEN agp.LoaiGiamGia = 0 THEN CAST(agp.GiaTriGiam AS DECIMAL(18,2))
-                         WHEN agp.LoaiGiamGia = 1 THEN IIF(agp.GiamToiDa > 0 AND (ctsp.GiaNiemYet * agp.GiaTriGiam / 100.0) > agp.GiamToiDa, CAST(agp.GiamToiDa AS DECIMAL(18,2)), CAST(ROUND(ctsp.GiaNiemYet * agp.GiaTriGiam / 100.0, 0) AS DECIMAL(18,2)))
-                    END AS GiamSan,
-                    CASE WHEN app.GiaTriGiam IS NULL THEN CAST(0 AS DECIMAL(18,2))
-                         WHEN app.LoaiGiamGia = 0 THEN CAST(app.GiaTriGiam AS DECIMAL(18,2))
-                         WHEN app.LoaiGiamGia = 1 THEN IIF(app.GiamToiDa > 0 AND (ctsp.GiaNiemYet * app.GiaTriGiam / 100.0) > app.GiamToiDa, CAST(app.GiamToiDa AS DECIMAL(18,2)), CAST(ROUND(ctsp.GiaNiemYet * app.GiaTriGiam / 100.0, 0) AS DECIMAL(18,2)))
-                    END AS GiamSP
-            ) TinhMucGiam
-            CROSS APPLY (
-                SELECT 
-                    IIF(TinhMucGiam.GiamSP > TinhMucGiam.GiamSan, TinhMucGiam.GiamSP, TinhMucGiam.GiamSan) AS MucGiamTotNhat,
-                    IIF(TinhMucGiam.GiamSP > TinhMucGiam.GiamSan, 'SP', IIF(TinhMucGiam.GiamSan > 0, 'SAN', 'NONE')) AS NguonGiam
-            ) TinhGia
-            WHERE ctsp.SanPhamID = @SanPhamID
-            ORDER BY kc.Ten, m.Ten;
-            """;
+                CASE WHEN agp.GiaTriGiam IS NULL THEN CAST(0 AS DECIMAL(18,2))
+                     WHEN agp.LoaiGiamGia = 0 THEN CAST(agp.GiaTriGiam AS DECIMAL(18,2))
+                     WHEN agp.LoaiGiamGia = 1 THEN IIF(agp.GiamToiDa > 0 AND (ctsp.GiaNiemYet * agp.GiaTriGiam / 100.0) > agp.GiamToiDa, CAST(agp.GiamToiDa AS DECIMAL(18,2)), CAST(ROUND(ctsp.GiaNiemYet * agp.GiaTriGiam / 100.0, 0) AS DECIMAL(18,2)))
+                END AS GiamSan,
+                CASE WHEN app.GiaTriGiam IS NULL THEN CAST(0 AS DECIMAL(18,2))
+                     WHEN app.LoaiGiamGia = 0 THEN CAST(app.GiaTriGiam AS DECIMAL(18,2))
+                     WHEN app.LoaiGiamGia = 1 THEN IIF(app.GiamToiDa > 0 AND (ctsp.GiaNiemYet * app.GiaTriGiam / 100.0) > app.GiamToiDa, CAST(app.GiamToiDa AS DECIMAL(18,2)), CAST(ROUND(ctsp.GiaNiemYet * app.GiaTriGiam / 100.0, 0) AS DECIMAL(18,2)))
+                END AS GiamSP
+        ) TinhMucGiam
+        CROSS APPLY (
+            SELECT 
+                IIF(TinhMucGiam.GiamSP > TinhMucGiam.GiamSan, TinhMucGiam.GiamSP, TinhMucGiam.GiamSan) AS MucGiamTotNhat,
+                IIF(TinhMucGiam.GiamSP > TinhMucGiam.GiamSan, 'SP', IIF(TinhMucGiam.GiamSan > 0, 'SAN', 'NONE')) AS NguonGiam
+        ) TinhGia
+        WHERE ctsp.SanPhamID = @SanPhamID
+        ORDER BY kc.Ten, m.Ten;
+        """;
 
             await using var connection = _connectionFactory.CreateConnection();
             await connection.OpenAsync(cancellationToken);
@@ -212,15 +224,14 @@ public sealed class StoreRepository : IStoreRepository
                     TenKichCo = reader.IsDBNull(2) ? string.Empty : reader.GetString(2),
                     MauID = reader.IsDBNull(3) ? string.Empty : reader.GetString(3),
                     TenMau = reader.IsDBNull(4) ? string.Empty : reader.GetString(4),
-
-                    // 🚀 Sử dụng Convert chống lỗi lệch pha dữ liệu ép kiểu tuyệt đối
                     GiaNiemYet = reader.IsDBNull(5) ? 0m : Convert.ToDecimal(reader.GetValue(5)),
                     GiaGoc = reader.IsDBNull(6) ? 0m : Convert.ToDecimal(reader.GetValue(6)),
                     PhanTramGiam = reader.IsDBNull(7) ? 0m : Convert.ToDecimal(reader.GetValue(7)),
                     LoaiGiamGia = reader.IsDBNull(8) ? -1 : Convert.ToInt32(reader.GetValue(8)),
                     GiaTriGiam = reader.IsDBNull(9) ? 0m : Convert.ToDecimal(reader.GetValue(9)),
                     GiamToiDa = reader.IsDBNull(10) ? 0m : Convert.ToDecimal(reader.GetValue(10)),
-                    SoLuongTon = reader.IsDBNull(11) ? 0 : Convert.ToInt32(reader.GetValue(11))
+                    HinhAnhUrl = reader.IsDBNull(11) ? "/images/default-product.png" : reader.GetString(11),
+                    SoLuongTon = reader.IsDBNull(12) ? 0 : Convert.ToInt32(reader.GetValue(12))
                 });
             }
 

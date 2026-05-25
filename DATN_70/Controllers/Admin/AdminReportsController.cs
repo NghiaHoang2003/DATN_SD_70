@@ -10,7 +10,7 @@ namespace DATN_70.Controllers.Admin;
 
 [ApiController]
 [Route("api/admin/reports")]
-[CustomAuthorize("R01", "R02")]
+[CustomAuthorize("R01")]
 public class AdminReportsController : ControllerBase
 {
     private readonly AppDbContext _dbContext;
@@ -75,7 +75,7 @@ public class AdminReportsController : ControllerBase
         });
     }
 
-    // 2. DOANH THU THEO THỜI GIAN (DÙNG CHO BIỂU ĐỒ ĐƯỜNG)
+
     // 2. DOANH THU THEO THỜI GIAN (DÙNG CHO BIỂU ĐỒ ĐƯỜNG)
     [HttpGet("revenue-over-time")]
     public async Task<IActionResult> GetRevenueOverTime(
