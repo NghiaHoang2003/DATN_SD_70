@@ -4,9 +4,9 @@
 }
 
 <div class="container-fluid p-4">
-    <h2 class="fw-bold mb-4"><i class="bi bi-bar-chart-fill me-2"></i>Báo cáo chuyên sâu</h2>
+    <h2 class="fw-bold mb-4"><i class="bi bi-graph-up-arrow me-2"></i>Báo cáo chuyên sâu</h2>
 
-    <!-- Bộ lọc thời gian -->
+    <!-- Bộ lọc thời gian (giữ nguyên) -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="card">
@@ -30,49 +30,50 @@
         </div>
     </div>
 
-    <!-- Khu vực 1: Phân tích khách hàng -->
-    <div class="row mb-4">
-        <div class="col-12"><h4 class="fw-bold"><i class="bi bi-people-fill me-2"></i>Phân tích khách hàng</h4></div>
-        <div class="col-md-3">
+    <!-- Khu vực 1: Khách hàng của tôi là ai? -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <h4 class="fw-bold mb-3"><i class="bi bi-people-fill me-2"></i>Khách hàng của tôi là ai?</h4>
+        </div>
+        <div class="col-md-4">
             <div class="card p-3 text-center">
-                <small class="text-muted">Tổng khách hàng</small>
-                <h4 id="lblTotalCustomers">0</h4>
+                <small class="text-muted">Tổng số khách hàng trong kỳ</small>
+                <h3 id="lblTotalCustomers" class="fw-bold">0</h3>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-4">
             <div class="card p-3 text-center">
-                <small class="text-muted">Tỷ lệ khách quay lại</small>
-                <h4 id="lblReturningRate">0%</h4>
+                <small class="text-muted">Tỷ lệ khách quay lại mua lần 2</small>
+                <h3 id="lblReturningRate" class="fw-bold">0%</h3>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="card p-3">
-                <h6 class="fw-bold">Top khách hàng thân thiết</h6>
-                <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
-                    <table class="table table-sm small">
-                        <thead><tr><th>Khách hàng</th><th>Tổng chi tiêu</th><th>Số đơn</th></tr></thead>
-                        <tbody id="topCustomersBody"></tbody>
-                    </table>
+        <div class="col-md-4">
+            <div class="card p-3 text-center">
+                <small class="text-muted">Khách VIP (chi tiêu nhiều nhất)</small>
+                <div id="topCustomersList" class="text-start small" style="max-height: 120px; overflow-y: auto;">
+                    <span class="text-muted">Đang tải...</span>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Khu vực 2: Hiệu quả khuyến mãi -->
-    <div class="row mb-4">
-        <div class="col-12"><h4 class="fw-bold"><i class="bi bi-tags-fill me-2"></i>Hiệu quả khuyến mãi</h4></div>
+    <!-- Khu vực 2: Khuyến mãi có thực sự hiệu quả? -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <h4 class="fw-bold mb-3"><i class="bi bi-tags-fill me-2"></i>Khuyến mãi có thực sự hiệu quả?</h4>
+        </div>
         <div class="col-md-6">
             <div class="card p-3">
-                <h6 class="fw-bold">Doanh thu có/không khuyến mãi</h6>
+                <h6 class="fw-bold">So sánh doanh thu từ đơn có và không có khuyến mãi</h6>
                 <canvas id="promoChart" height="250"></canvas>
             </div>
         </div>
         <div class="col-md-6">
             <div class="card p-3">
-                <h6 class="fw-bold">Top chương trình khuyến mãi</h6>
+                <h6 class="fw-bold">Các chương trình khuyến mãi được yêu thích nhất</h6>
                 <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
                     <table class="table table-sm small">
-                        <thead><tr><th>Mã KM</th><th>Lần dùng</th><th>Tổng giảm</th></tr></thead>
+                        <thead><tr><th>Mã KM</th><th>Lần dùng</th><th>Tổng tiền đã giảm</th></tr></thead>
                         <tbody id="topPromotionsBody"></tbody>
                     </table>
                 </div>
@@ -80,32 +81,36 @@
         </div>
     </div>
 
-    <!-- Khu vực 3: So sánh kênh bán -->
-    <div class="row mb-4">
-        <div class="col-12"><h4 class="fw-bold"><i class="bi bi-shop me-2"></i>So sánh kênh bán</h4></div>
+    <!-- Khu vực 3: Khách hàng thích mua sắm ở đâu? -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <h4 class="fw-bold mb-3"><i class="bi bi-shop me-2"></i>Khách hàng thích mua sắm ở đâu?</h4>
+        </div>
         <div class="col-md-4">
             <div class="card p-3 text-center">
                 <small class="text-muted">Doanh thu Online</small>
-                <h4 id="lblOnlineRevenue">0 đ</h4>
+                <h3 id="lblOnlineRevenue" class="fw-bold">0 đ</h3>
             </div>
         </div>
         <div class="col-md-4">
             <div class="card p-3 text-center">
-                <small class="text-muted">Doanh thu POS</small>
-                <h4 id="lblPosRevenue">0 đ</h4>
+                <small class="text-muted">Doanh thu tại quầy (POS)</small>
+                <h3 id="lblPosRevenue" class="fw-bold">0 đ</h3>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card p-3">
-                <h6 class="fw-bold">Tỷ trọng</h6>
-                <canvas id="channelPieChart" height="200"></canvas>
+            <div class="card p-3 text-center">
+                <small class="text-muted">Tỷ trọng giữa Online và POS</small>
+                <canvas id="channelPieChart" height="150"></canvas>
             </div>
         </div>
     </div>
 
-    <!-- Khu vực 4: Phân tích sản phẩm & tồn kho -->
+    <!-- Khu vực 4: Sản phẩm nào đang bán chạy / tồn kho nhiều? -->
     <div class="row mb-4">
-        <div class="col-12"><h4 class="fw-bold"><i class="bi bi-box-seam-fill me-2"></i>Phân tích sản phẩm & tồn kho</h4></div>
+        <div class="col-12">
+            <h4 class="fw-bold mb-3"><i class="bi bi-box-seam-fill me-2"></i>Sản phẩm nào đang bán chạy / tồn kho nhiều?</h4>
+        </div>
         <div class="col-md-6">
             <div class="card p-3">
                 <h6 class="fw-bold">Doanh thu theo danh mục</h6>
@@ -114,7 +119,7 @@
         </div>
         <div class="col-md-6">
             <div class="card p-3">
-                <h6 class="fw-bold">Top 10 sản phẩm tồn kho nhiều nhất</h6>
+                <h6 class="fw-bold">Top 10 sản phẩm còn tồn kho nhiều nhất</h6>
                 <canvas id="inventoryChart" height="250"></canvas>
             </div>
         </div>
@@ -166,10 +171,13 @@
             document.getElementById('lblTotalCustomers').textContent = custData.totalCustomers || 0;
             document.getElementById('lblReturningRate').textContent = (custData.returningRate || 0) + '%';
             let topCustHtml = '';
-            (custData.topCustomers || []).forEach(c => {
-                topCustHtml += `<tr><td>${c.customerName}</td><td>${(c.totalSpent || 0).toLocaleString('vi-VN')} đ</td><td>${c.orderCount}</td></tr>`;
+            (custData.topCustomers || []).slice(0, 3).forEach(c => {
+                topCustHtml += `<div class="d-flex justify-content-between border-bottom py-1">
+                    <span class="fw-medium">${c.customerName}</span>
+                    <span class="text-danger">${(c.totalSpent || 0).toLocaleString('vi-VN')} đ</span>
+                </div>`;
             });
-            document.getElementById('topCustomersBody').innerHTML = topCustHtml || '<tr><td colspan="3" class="text-center">Chưa có dữ liệu</td></tr>';
+            document.getElementById('topCustomersList').innerHTML = topCustHtml || '<span class="text-muted">Chưa có dữ liệu</span>';
 
             // 2. Khuyến mãi
             const promoData = await fetch(`/api/admin/reports/promotion-stats?${params}`).then(r => r.json());
@@ -205,6 +213,11 @@
                         data: [channelData.onlineRevenue || 0, channelData.posRevenue || 0],
                         backgroundColor: ['#3699ff', '#50cd89']
                     }]
+                },
+                options: {
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
                 }
             });
 

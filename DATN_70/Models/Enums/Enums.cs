@@ -55,7 +55,7 @@
         public enum TrangThaiDoiTra
         {
             ChoXuLy = 0,
-            DaHoanTien_NhapKho = 1, // Trạng thái này sẽ kích hoạt code cộng lại số lượng tồn
+            DaHoanTien_NhapKho = 1, 
             TuChoi = 2
         }
 

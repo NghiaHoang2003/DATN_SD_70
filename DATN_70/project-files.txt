@@ -210,6 +210,7 @@ C:.
 |           AdminPromotionsController.cs
 |           AdminReportsController.cs
 |           AdminSizesController.cs
+|           ReportsController.cs
 |           
 +---Data
 |       AppDbContext.cs
@@ -238,6 +239,10 @@ C:.
 |       20260518181332_AddRMA.Designer.cs
 |       20260522210120_AddResetTokenFields.cs
 |       20260522210120_AddResetTokenFields.Designer.cs
+|       20260524060837_AddDanhMucIdToKhuyenMai.cs
+|       20260524060837_AddDanhMucIdToKhuyenMai.Designer.cs
+|       20260525163819_AddIsActiveToSanPham.cs
+|       20260525163819_AddIsActiveToSanPham.Designer.cs
 |       AppDbContextModelSnapshot.cs
 |       
 +---Models
@@ -398,14 +403,17 @@ C:.
 |   |       ResetPassword.cshtml
 |   |       
 |   +---Admin
-|   |       Accounts.cshtml
-|   |       Attributes.cshtml
-|   |       Dashboard.cshtml
-|   |       Orders.cshtml
-|   |       Pos.cshtml
-|   |       Products.cshtml
-|   |       Promotions.cshtml
-|   |       
+|   |   |   Accounts.cshtml
+|   |   |   Attributes.cshtml
+|   |   |   Dashboard.cshtml
+|   |   |   Orders.cshtml
+|   |   |   Pos.cshtml
+|   |   |   Products.cshtml
+|   |   |   Promotions.cshtml
+|   |   |   
+|   |   \---Reports
+|   |           Advanced.cshtml
+|   |           
 |   +---Banner
 |   |       Index.cshtml
 |   |       
@@ -445,12 +453,113 @@ C:.
     |   |       70527d72.jpg
     |   |       
     |   \---products
+    |           06c1122f-75f5-4b9b-a969-0c37120a8b50_Copilot_20260525_203727.png
+    |           07f0f08e-c879-47d4-9711-b4cc36529a37_Copilot_20260525_201944.png
+    |           0d35794b-da63-438b-9668-29ce0264f2d8_Copilot_20260525_204135.png
+    |           0e9c5a89-5e11-4fea-b201-abcb189dd26b_Copilot_20260525_210745.png
+    |           0f39ed63-2e3b-4ee9-97a3-ff3456342572_Copilot_20260525_191039.png
+    |           115a9a54-e024-46cf-8d18-3f164cbf5b1f_Copilot_20260525_201422.png
+    |           160ecee4-f914-4800-a47f-14432905bb19_Copilot_20260525_191153.png
+    |           17ff2cf9-00fa-4ee4-afdc-eac698bcce7f_Copilot_20260525_191153.png
+    |           19d504fa-c591-4b8e-af32-8f2b16af9a60_Copilot_20260525_202745.png
+    |           1b3a9e7d-a01d-4a09-aec0-43b4c92959da_Copilot_20260525_205223.png
+    |           1b7d0f2e-005c-4b21-b675-b91ea222c385_Copilot_20260525_200719.png
+    |           1c4d92a1-0468-4987-b9c3-8d4667dcc10c_Copilot_20260525_200617.png
+    |           221ecfe3-3b9e-4df1-8f30-eb36cd73d749_Copilot_20260525_204723.png
+    |           2787cb07-50d2-4dc4-bb7c-0bb3748b8f0b_Copilot_20260525_213507.png
+    |           2a072cb7-9a1e-474d-b91d-cf8c99ed9c8c_Copilot_20260525_203356.png
+    |           2f02fadf-39bc-43d4-8a31-bd3564bce7d3_Copilot_20260525_195437.png
+    |           2f21e741-4ef3-4b88-bdb9-1a1977ecc1e4_Copilot_20260525_191350.png
+    |           2f5a4540-8fb6-48ce-87de-222cc5c80612_Copilot_20260525_205709.png
+    |           3079e697-dc4e-4864-83b5-866c874ef985_Copilot_20260525_203312.png
+    |           31552591-a1a4-4254-b155-88a5aef78db6_Copilot_20260525_203356.png
+    |           31b08413-2b81-4eb0-8890-6529cd1d1708_Copilot_20260525_205709.png
+    |           323eb687-b38a-48ac-850c-88c1713ea921_Copilot_20260525_205516.png
+    |           347d4b60-cc26-42bd-9413-f11b362cda34_Copilot_20260525_205132.png
+    |           34823c88-12a8-47ab-a610-1a9c08d3d95c_Copilot_20260525_190838.png
+    |           34a3fd86-f54b-4653-98bd-7e0e5cc85a05_Copilot_20260525_204445.png
+    |           36434ff7-7510-4270-baac-74e85d01cd30_Copilot_20260525_200306.png
+    |           3c0f6ca5-14c4-4d63-85e5-a111b847a1a7_Copilot_20260525_204928.png
+    |           42f827f2-42e8-4689-94c3-beb2dcbfd0e8_Copilot_20260525_200949.png
+    |           47089ccd-bee2-4266-81ab-afc9510078a2_z7822149977564_e72204e6e9de52e000fc3d6ee8e9559f.jpg
+    |           48022925-cdf7-47ba-a34c-1234f01b409f_Copilot_20260525_205015.png
+    |           4d302513-5089-4d06-aa2d-9657463207ad_Copilot_20260525_205749.png
+    |           5716d644-1480-4901-a863-d4523da25912_Copilot_20260525_214039.png
+    |           57e1b4d9-8999-4ef2-8aa7-f8b628c12da9_Copilot_20260525_213810.png
+    |           59e2bca0-d52b-4564-9ebd-e073644a2d26_Copilot_20260525_205015.png
     |           5a345f77-4980-4ef6-b2de-3d4acedb62ee_z7822149977564_e72204e6e9de52e000fc3d6ee8e9559f.jpg
+    |           5e0176c6-e093-420a-adba-d52e2943c2e6_Copilot_20260525_214000.png
+    |           6074f0c7-ad6e-4a60-a11d-895f23d45c35_Copilot_20260525_202516.png
+    |           60f80fcc-119f-4ef1-8035-a1aefda7f710_Copilot_20260525_195949.png
+    |           648e1bda-103f-46c9-9b8f-c95dd8127b3a_Copilot_20260525_205709.png
+    |           66dbf164-626f-4661-99cd-fa4c6d093f0e_Copilot_20260525_201822.png
+    |           670518d6-e5bd-4603-b979-5a45f56da416_usecase-Page-20.drawio.png
+    |           691a2843-7aeb-4aa6-8330-8a372f138a87_Copilot_20260525_202047.png
+    |           69c9bade-aeec-4379-8e8b-1c8be1fb229b_Copilot_20260525_210133.png
     |           6a268f3b-96ff-4058-b718-461e61186802_mduc8241-phan-van-giang.jpg
+    |           6c99d575-383a-43f0-89e1-720b74b5bace_Copilot_20260525_201112.png
+    |           6e0e1a50-507c-47c0-96d7-bbd216e156d9_Copilot_20260525_205623.png
+    |           6f1e86e6-194f-4526-a5f7-60e5271db55d_Copilot_20260525_204928.png
+    |           6f5f8874-01fb-43ec-8857-a8856148a35e_Copilot_20260525_203220.png
+    |           70e46596-1463-4f39-a5ba-04e8631eb297_Copilot_20260525_194832.png
+    |           71b52900-5833-44c1-9461-e2c352a10e71_Copilot_20260525_203444.png
     |           7324ad75-69db-4f2a-979e-565c8fc9d809_z7822149977564_e72204e6e9de52e000fc3d6ee8e9559f.jpg
+    |           746f22fc-c3cb-4db5-a1fb-bfd69a07b9ed_Copilot_20260525_203122.png
+    |           7475892d-2c3f-4ada-b8a3-75c1af50d4f1_Copilot_20260525_205749.png
+    |           7755ebe0-484f-4209-998a-21f0e6a8cbc8_xKXxY.jpg
+    |           7a028bde-aeeb-4dff-9772-422b19852401_Copilot_20260525_210229.png
+    |           7b03936c-688b-491e-a2b5-c79ddd67da9f_Copilot_20260525_204307.png
+    |           7bdf8966-9a04-4f57-99a3-8b33145cd096_Copilot_20260525_195859.png
+    |           7d74da66-03a7-45e0-b045-8684cc4c1ce5_Copilot_20260525_205623.png
+    |           8409b50b-8705-4261-91f5-4f8aba73dcf4_N4X4o.jpg
+    |           88bcd357-0a2b-4698-b968-229b29581b42_Copilot_20260525_203822.png
+    |           88cb3cd1-4ed1-456e-95c3-935f479b50e0_Copilot_20260525_202630.png
+    |           8966ad92-15ec-47d1-8094-03f751bd9a29_Copilot_20260525_200816.png
+    |           8c8435b5-6987-4e2a-83b9-6e855ba1dddc_Copilot_20260525_205950.png
+    |           8ef9786e-14c9-434e-9c7d-80b667f965f8_Copilot_20260525_204401.png
+    |           8f1e1694-934d-49b3-b15a-d0e8faa3d8e1_Copilot_20260525_204830.png
+    |           92ce5b3f-a813-472f-b5b6-52198f091f80_Copilot_20260525_200403.png
+    |           93b71eda-f31b-437a-a06b-7598b5073dff_Copilot_20260525_203312.png
+    |           967c4382-5f78-419e-9ba8-6b6cf8a9e574_Copilot_20260525_195059.png
+    |           9c707cab-98d4-4771-a593-ab9ad1d0f659_Copilot_20260525_203525.png
+    |           a3b91ec7-758c-4198-aac2-391cabc9b074_Copilot_20260525_203444.png
+    |           a44d7828-97f8-4032-a86f-c35d8ae484f6_Copilot_20260525_203621.png
+    |           a5777d06-cdec-44ba-a658-554ff0ae282c_Copilot_20260525_195346.png
     |           a7e2482b-a7df-4814-83ab-a192b32483c2_mduc8241-phan-van-giang.jpg
+    |           a874474a-f40b-43fb-b56a-26468c10be3d_Copilot_20260525_204220.png
+    |           a8c98fb2-110e-4c7a-b257-c14ba10fd9ea_mduc8241-phan-van-giang.jpg
+    |           ac4802c0-ad40-4b46-958b-63561f9c301e_UFQm1.jpg
+    |           ad87d7f1-c7af-43be-a469-6e5d64edae57_Copilot_20260525_195753.png
     |           b67351b7-99f6-4a05-9982-9ec6269726ea_z7822149977564_e72204e6e9de52e000fc3d6ee8e9559f.jpg
+    |           b97f65fd-9179-4b68-be04-71bf0b161ffc_Copilot_20260525_201243.png
+    |           ba0b96f4-011c-453d-bf3c-03010429b401_Copilot_20260525_202827.png
+    |           bce24301-e152-4a2f-aac0-4bcc42738bcd_Copilot_20260525_202327.png
+    |           bd42890f-1806-41e2-b6f7-794df162e478_N4X4o.jpg
     |           bd6180ec-61b2-4ed8-b101-f7a9c1cd016d_mduc8241-phan-van-giang.jpg
+    |           beaef698-420d-4605-b472-8a9acc2a50eb_Copilot_20260525_195639.png
+    |           bfba72cb-59e6-4227-8d89-7282d467e430_usecase-Page-20.drawio.png
+    |           c531c518-7f52-4790-8aee-48cc580d75de_Copilot_20260525_200527.png
+    |           c6d06a86-c787-4033-80ce-99bd1285c94a_Copilot_20260525_195533.png
+    |           c88657af-ad19-4d13-87a4-c87877ee73a0_Copilot_20260525_201708.png
+    |           ce982f74-2e31-4f7a-8955-26ce3c9f52ad_Copilot_20260525_203034.png
+    |           d650dce4-7d7e-45a8-bdc8-4c8f2b2302e3_Copilot_20260525_205132.png
+    |           d69fb04d-e4b1-4d43-8e25-fa26a9644c08_Copilot_20260525_204135.png
+    |           e0a42bbe-9739-4ad6-a37b-66211e07fdb7_Copilot_20260525_201619.png
+    |           e4f3c6ea-bd26-4886-835d-e547fe461f1d_Copilot_20260525_205838.png
+    |           e81dddfe-18e2-4f88-a072-ba94aa9ca9ec_Copilot_20260525_204533.png
+    |           eabee18d-ce74-45be-9913-d65fd1d85663_Copilot_20260525_202427.png
+    |           ec104324-d9b2-4148-a907-ece42bde2a8f_Copilot_20260525_202131.png
+    |           ee32aac2-4b5b-47b7-bd7a-e418aaf93eca_Copilot_20260525_221956.png
+    |           eed2bd4a-08ad-440f-819f-d1d989774137_Copilot_20260525_210530.png
+    |           f3e6283a-6aa8-4ad9-a97b-2d29dff01303_Copilot_20260525_210628.png
+    |           f4706148-db3d-4ae0-a5fe-227b040f9ba8_Copilot_20260525_205311.png
+    |           f7bcb18b-708a-4e12-bf5a-fb31ae08c8a5_Copilot_20260525_222026.png
+    |           fb43659e-b6e7-4348-b90e-1e488ab1f16f_Copilot_20260525_210318.png
+    |           fca43509-90ad-45d0-8bd5-dfd4816cbc87_Copilot_20260525_201200.png
+    |           fcfad7bb-da10-48f8-b735-e04ffddc0c29_Copilot_20260525_201319.png
+    |           fdeee99c-a6e8-41f3-916a-d62aae0d1bc6_Copilot_20260525_202214.png
+    |           ff6ec4fa-b0ca-4658-9505-f19ad5207a82_Copilot_20260525_213903.png
+    |           ffd3d1ec-ae42-4cf9-9874-c05f8c2e770a_Copilot_20260525_203220.png
     |           SP0001-BLK.png
     |           SP0001-CRM.png
     |           SP0001-NVY.png
@@ -538,6 +647,12 @@ C:.
         |               bootstrap.min.js
         |               bootstrap.min.js.map
         |               
+        +---bootstrap-icons
+        |   |   bootstrap-icons.css
+        |   |   
+        |   \---fonts
+        |           bootstrap-icons.woff2
+        |           
         +---jquery
         |   |   LICENSE.txt
         |   |   

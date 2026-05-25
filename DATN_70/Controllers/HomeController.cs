@@ -419,7 +419,7 @@ public class HomeController : Controller
                 }
                 if (ctsp.SoLuongTonKho < item.SoLuong) return BadRequest(new { message = $"Sản phẩm {ctsp.SanPham.Ten} không đủ số lượng tồn kho." });
 
-                ctsp.SoLuongTonKho -= item.SoLuong;
+                //ctsp.SoLuongTonKho -= item.SoLuong;
 
                 decimal mucVAT = ctsp.SanPham.MucVAT;
                 decimal donGia = await GetDiscountedPriceAsync(ctsp, cancellationToken);

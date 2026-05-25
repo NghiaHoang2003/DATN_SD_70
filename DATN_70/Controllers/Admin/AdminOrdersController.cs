@@ -251,7 +251,62 @@ public sealed class AdminOrdersController : ControllerBase
 
         return Ok(returns);
     }
+    // 4b. XEM CHI TIẾT MỘT PHIẾU ĐỔI TRẢ
+    [HttpGet("returns/{returnId}")]
+    public async Task<IActionResult> GetReturnDetail(
+        [Required] string returnId,
+        CancellationToken cancellationToken = default)
+    {
+        var phieu = await _dbContext.Set<PhieuDoiTra>()
+            .Include(p => p.HoaDon)
+                .ThenInclude(h => h.KhachHang)
+            .Include(p => p.ChiTietDoiTras)
+                .ThenInclude(c => c.ChiTietSanPham)
+                    .ThenInclude(ct => ct.SanPham)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.PhieuDoiTraID == returnId, cancellationToken);
 
+        if (phieu is null)
+            return NotFound(new { message = $"Không tìm thấy phiếu RMA: {returnId}" });
+
+        var response = new AdminReturnDetailResponse
+        {
+            PhieuDoiTraID = phieu.PhieuDoiTraID,
+            HoaDonID = phieu.HoaDonID,
+            NgayTao = phieu.NgayTao,
+            TongTienHoan = phieu.TongTienHoan,
+            GhiChu = phieu.GhiChuAdmin ?? string.Empty,
+            TrangThai = (int)phieu.TrangThai,
+            TrangThaiLabel = phieu.TrangThai switch
+            {
+                Enums.TrangThaiDoiTra.ChoXuLy => "Chờ xử lý",
+                Enums.TrangThaiDoiTra.DaHoanTien_NhapKho => "Đã nhập kho & hoàn tiền",
+                Enums.TrangThaiDoiTra.TuChoi => "Bị từ chối",
+                _ => "Không xác định"
+            },
+            TenKhachHang = phieu.HoaDon?.KhachHang?.Ten ?? "Khách ẩn danh",
+            Items = phieu.ChiTietDoiTras.Select(c => new AdminReturnItemResponse
+            {
+                TenSanPham = c.ChiTietSanPham?.SanPham?.Ten ?? "Sản phẩm đã bị xóa",
+                KichCo = c.ChiTietSanPham?.KichCoID ?? "N/A",
+                MauSac = c.ChiTietSanPham?.MauID ?? "N/A",
+                SoLuongTra = c.SoLuongTra,
+                DonGia = c.GiaTriHoanLai / (c.SoLuongTra == 0 ? 1 : c.SoLuongTra),
+                GiaTriHoanLai = c.GiaTriHoanLai,
+                // SỬA ĐOẠN NÀY trong switch của LyDoLabel:
+                LyDoLabel = c.LyDo switch
+                {
+                    Enums.LyDoDoiTra.LoiNhaSanXuat => "Lỗi do Nhà sản xuất",
+                    Enums.LyDoDoiTra.SaiKichCoMauSac => "Sai Kích cỡ / Màu sắc",
+                    Enums.LyDoDoiTra.GiaoThieuHang => "Hệ thống giao thiếu hàng",
+                    Enums.LyDoDoiTra.Khac => "Lý do Khác",   // ← đổi LyDoKhac thành Khac
+                    _ => "Không xác định"
+                }
+            }).ToList()
+        };
+
+        return Ok(response);
+    }
     // 5. TẠO MỚI PHIẾU ĐỔI TRẢ HÀNG
     [HttpPost("returns")]
     public async Task<IActionResult> CreateReturnRequest([FromBody] AdminCreateReturnRequest request, CancellationToken cancellationToken = default)
@@ -261,7 +316,7 @@ public sealed class AdminOrdersController : ControllerBase
             .FirstOrDefaultAsync(h => h.HoaDonID == request.HoaDonId, cancellationToken);
 
         if (order == null) return NotFound(new { message = "Không tìm thấy hóa đơn tương ứng." });
-        if (order.TrangThai != Enums.TrangThaiHoaDon.HoanThanh) return BadRequest(new { message = "Chỉ đơn hàng ở trạng thái [Thành công] mới được phép đổi trả!" });
+        if (order.TrangThai != Enums.TrangThaiHoaDon.HoanThanh && order.TrangThai != Enums.TrangThaiHoaDon.GiaoHangThatBai) return BadRequest(new { message = "Chỉ đơn hàng ở trạng thái [Thành công] mới được phép đổi trả!" });
 
         var phieuId = "RMA" + Guid.NewGuid().ToString("N").Substring(0, 8).ToUpper();
         decimal tongTienHoan = 0;
@@ -488,5 +543,28 @@ public class AdminCreateReturnItem
     public int SoLuongTra { get; set; }
     [Required]
     public int LyDoKey { get; set; }
+}
+public sealed class AdminReturnDetailResponse
+{
+    public string PhieuDoiTraID { get; set; } = string.Empty;
+    public string HoaDonID { get; set; } = string.Empty;
+    public DateTime NgayTao { get; set; }
+    public decimal TongTienHoan { get; set; }
+    public string GhiChu { get; set; } = string.Empty;
+    public int TrangThai { get; set; }
+    public string TrangThaiLabel { get; set; } = string.Empty;
+    public string TenKhachHang { get; set; } = string.Empty;
+    public List<AdminReturnItemResponse> Items { get; set; } = new();
+}
+
+public sealed class AdminReturnItemResponse
+{
+    public string TenSanPham { get; set; } = string.Empty;
+    public string KichCo { get; set; } = string.Empty;
+    public string MauSac { get; set; } = string.Empty;
+    public int SoLuongTra { get; set; }
+    public decimal DonGia { get; set; }
+    public decimal GiaTriHoanLai { get; set; }
+    public string LyDoLabel { get; set; } = string.Empty;
 }
 #endregion

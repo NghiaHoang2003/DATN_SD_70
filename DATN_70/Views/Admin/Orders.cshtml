@@ -8,6 +8,12 @@
         color: #000000 !important;
         border: 1px solid #dee2e6 !important;
     }
+
+    .badge-delivery_failed {
+        background-color: #fff3cd !important;
+        color: #856404 !important;
+        border: 1px solid #ffc107 !important;
+    }
 </style>
 
 <div class="card p-4 bg-white">
@@ -34,6 +40,7 @@
                     <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
                     <input type="text" id="searchOrderInput" class="form-control border-start-0 ps-0" placeholder="Tìm tên hoặc số điện thoại...">
                 </div>
+
                 <select id="statusFilter" class="form-select form-select-sm w-auto fw-medium shadow-sm">
                     <option value="all">Tất cả trạng thái</option>
                     <option value="pending">Chờ xác nhận</option>
@@ -43,6 +50,7 @@
                     <option value="success">Thành công</option>
                     <option value="cancelled">Đã hủy</option>
                     <option value="delivery_failed">Giao thất bại</option>
+                    <option value="qr_pending">Chờ thanh toán QR</option>
                 </select>
             </div>
             <div class="table-responsive">
@@ -64,7 +72,9 @@
                 </table>
                 <div class="d-flex justify-content-between align-items-center mt-3">
                     <div>
-                        <span class="small text-muted">Hiển thị <span id="startRecord">0</span>-<span id="endRecord">0</span> trên tổng <span id="totalRecords">0</span></span>
+                        <span class="small text-muted">
+                            Hiển thị <span id="startRecord">0</span>-<span id="endRecord">0</span> trên tổng <span id="totalRecords">0</span>
+                        </span>
                     </div>
                     <nav>
                         <ul class="pagination pagination-sm mb-0" id="pagination"></ul>
@@ -94,6 +104,7 @@
     </div>
 </div>
 
+<!-- Modal Xem chi tiết đơn hàng -->
 <div class="modal fade" id="orderModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -110,14 +121,144 @@
     </div>
 </div>
 
-<!-- Modal tạo phiếu đổi trả (giữ nguyên) -->
+<!-- Modal Tạo phiếu đổi trả -->
 <div class="modal fade" id="createReturnModal" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
-    <!-- Nội dung giữ nguyên -->
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-warning-subtle">
+                <h5 class="modal-title fw-bold text-warning-emphasis"><i class="bi bi-arrow-counterclockwise me-2"></i>LẬP PHIẾU ĐỔI TRẢ CHO ĐƠN: <span id="lblReturnOrderId"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="frmCreateReturn">
+                <input type="hidden" id="hidReturnOrderId" />
+                <div class="modal-body">
+                    <p class="text-muted small">Tick chọn sản phẩm khách hàng hoàn trả, nhập đúng số lượng thực tế nhận lại và chọn lý do tương ứng.</p>
+
+                    <div class="table-responsive mb-3">
+                        <table class="table table-bordered align-middle small">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 40px;">Chọn</th>
+                                    <th>Tên Sản Phẩm / Phân Loại</th>
+                                    <th style="width: 100px;">Giá mua</th>
+                                    <th style="width: 100px;">SL Mua</th>
+                                    <th style="width: 110px;">SL Hoàn *</th>
+                                    <th>Lý do đổi trả *</th>
+                                </tr>
+                            </thead>
+                            <tbody id="returnItemsTableBody"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="mb-0">
+                        <label class="form-label small fw-bold">Ghi chú kiểm kho của Admin/Nhân viên</label>
+                        <textarea class="form-control form-control-sm" id="txtReturnGhiChu" rows="2" placeholder="Ví dụ: Khách trả lại do mặc chật, hàng còn nguyên tem mác..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy bỏ</button>
+                    <button type="submit" class="btn btn-warning btn-sm fw-bold text-dark px-4">Xác nhận Tạo phiếu</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
-<!-- Template in hóa đơn (giữ nguyên) -->
+<!-- Modal Chi tiết phiếu RMA -->
+<div class="modal fade" id="rmaDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-clipboard2-check me-2 text-warning"></i>
+                    CHI TIẾT PHIẾU ĐỔI TRẢ
+                    <span id="rmaDetailId" class="text-warning"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="rmaDetailContent">
+                <!-- Nội dung load động -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Đóng lại</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Template In hóa đơn -->
 <div id="invoicePrintArea" style="display: none;">
-    <!-- Nội dung giữ nguyên -->
+    <style>
+        @@media print {
+            body * {
+                visibility: hidden;
+            }
+
+            #invoicePrintArea, #invoicePrintArea * {
+                visibility: visible;
+            }
+
+            #invoicePrintArea {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                padding: 20px;
+                font-family: 'Times New Roman', serif;
+                color: #000;
+            }
+        }
+
+        .invoice-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+            .invoice-header h2 {
+                margin: 0;
+                font-size: 24px;
+            }
+
+            .invoice-header p {
+                margin: 2px 0;
+                font-size: 14px;
+            }
+
+        .invoice-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            font-size: 13px;
+        }
+
+        .invoice-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+
+            .invoice-table th, .invoice-table td {
+                border: 1px solid #000;
+                padding: 6px 8px;
+                text-align: left;
+                font-size: 13px;
+            }
+
+            .invoice-table th {
+                background-color: #f0f0f0;
+            }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .invoice-total {
+            text-align: right;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+    </style>
+    <div id="invoiceContent"></div>
 </div>
 
 @section Scripts {
@@ -127,20 +268,20 @@
             let currentPage = 1;
             const pageSize = 10;
             let allOrders = [];
+            let originalOrders = [];
 
             loadOrders('all');
 
-            $('#statusFilter').change(function() {
-                loadOrders($(this).val());
-            });
-
+            $('#statusFilter').change(function() { loadOrders($(this).val()); });
             $('#btn-tab-orders').on('shown.bs.tab', function() { loadOrders($('#statusFilter').val()); });
             $('#btn-tab-returns').on('shown.bs.tab', function() { loadReturnRequests(); });
 
+            // 1. TẢI ĐƠN HÀNG
             function loadOrders(status) {
                 $('#orderTableBody').html('<tr><td colspan="9" class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm me-2"></div>Đang tải dữ liệu...</td></tr>');
                 $.get(`/api/admin/orders?status=${status}`, function(data) {
                     allOrders = data;
+                    originalOrders = [...data];
                     currentPage = 1;
                     renderOrdersPage();
                 });
@@ -174,7 +315,6 @@
                     });
                 }
                 $('#orderTableBody').html(html);
-                $('#searchOrderInput').trigger('input');
 
                 $('#startRecord').text(allOrders.length > 0 ? start + 1 : 0);
                 $('#endRecord').text(end);
@@ -192,11 +332,33 @@
                 $('#pagination').html(paginationHtml);
             }
 
-            function loadReturnRequests() {
-                // Giữ nguyên
-            }
+            // Phân trang
+            $(document).on('click', '#pagination .page-link', function(e) {
+                e.preventDefault();
+                const page = parseInt($(this).data('page'));
+                if (page && page !== currentPage && page >= 1 && page <= Math.ceil(allOrders.length / pageSize)) {
+                    currentPage = page;
+                    renderOrdersPage();
+                }
+            });
 
-            // 3. XEM CHI TIẾT HÓA ĐƠN (ĐÃ SỬA PHẦN NÚT)
+            // Tìm kiếm
+            $('#searchOrderInput').on('input', function () {
+                let keyword = $(this).val().toLowerCase().trim();
+                if (!keyword) {
+                    allOrders = [...originalOrders];
+                } else {
+                    allOrders = originalOrders.filter(o =>
+                        (o.tenKhachHang && o.tenKhachHang.toLowerCase().includes(keyword)) ||
+                        (o.soDienThoai && o.soDienThoai.includes(keyword)) ||
+                        (o.hoaDonId && o.hoaDonId.toLowerCase().includes(keyword))
+                    );
+                }
+                currentPage = 1;
+                renderOrdersPage();
+            });
+
+            // 3. XEM CHI TIẾT ĐƠN HÀNG
             $(document).on('click', '.btn-view-detail', function() {
                 const orderId = $(this).data('id');
                 $('#modalOrderId').text(orderId);
@@ -205,10 +367,14 @@
 
                 $.get(`/api/admin/orders/${orderId}`, function(order) {
                     let buttonsHtml = '';
-
                     if (order.trangThaiKey === 'pending') {
                         buttonsHtml = `
                             <button class="btn btn-primary btn-sm fw-medium btn-process-order" data-action="next"><i class="bi bi-check-circle me-1"></i> Xác nhận đơn hàng</button>
+                            <button class="btn btn-outline-danger btn-sm fw-medium btn-process-order" data-action="cancel"><i class="bi bi-x-circle me-1"></i> Hủy đơn</button>`;
+                    }
+                    else if (order.trangThaiKey === 'qr_pending') {
+                        buttonsHtml = `
+                            <button class="btn btn-primary btn-sm fw-medium btn-process-order" data-action="next"><i class="bi bi-check-circle me-1"></i> Xác nhận đã thanh toán</button>
                             <button class="btn btn-outline-danger btn-sm fw-medium btn-process-order" data-action="cancel"><i class="bi bi-x-circle me-1"></i> Hủy đơn</button>`;
                     }
                     else if (order.trangThaiKey === 'confirmed') {
@@ -230,9 +396,13 @@
                     }
                     else if (order.trangThaiKey === 'delivery_failed') {
                         buttonsHtml = `
-                            <button class="btn btn-info btn-sm fw-medium btn-process-order" data-action="redeliver"><i class="bi bi-truck me-1"></i> Phát lại</button>
-                            <button class="btn btn-outline-danger btn-sm fw-medium btn-process-order ms-1" data-action="cancel"><i class="bi bi-x-circle me-1"></i> Hủy đơn</button>`;
+                            <button class="btn btn-warning btn-sm fw-bold text-dark btn-trigger-return" data-id="${order.hoaDonId}">
+            <i class="bi bi-arrow-counterclockwise me-1"></i> Lập phiếu hoàn kho
+        </button>
+        <button class="btn btn-info btn-sm fw-medium btn-process-order" data-action="redeliver"><i class="bi bi-truck me-1"></i> Phát lại</button>
+        <button class="btn btn-outline-danger btn-sm fw-medium btn-process-order ms-1" data-action="cancel"><i class="bi bi-x-circle me-1"></i> Hủy đơn</button>`;  
                     }
+
                     else if (order.trangThaiKey === 'success') {
                         buttonsHtml = `
                             <button class="btn btn-warning btn-sm fw-bold text-dark btn-trigger-return" data-id="${order.hoaDonId}">
@@ -243,13 +413,11 @@
                     else if (order.trangThaiKey === 'cancelled') {
                         buttonsHtml = `<span class="badge bg-danger-soft text-danger border p-2 rounded-1 small fw-bold"><i class="bi bi-x-circle-fill me-1"></i> Đơn đã bị hủy bỏ</span>`;
                     }
-                    // Thêm nút In hóa đơn cho mọi trạng thái (trừ đã hủy)
                     if (order.trangThaiKey !== 'cancelled') {
                         buttonsHtml += `<button class="btn btn-outline-dark btn-sm fw-medium ms-2 btn-print-invoice" data-id="${order.hoaDonId}"><i class="bi bi-printer me-1"></i> In hóa đơn</button>`;
                     }
                     $('#modalActionButtons').html(buttonsHtml);
 
-                    // Phần hiển thị nội dung đơn hàng giữ nguyên
                     let itemsHtml = '';
                     let stt = 1;
                     order.chiTietSanPham.forEach(item => {
@@ -267,6 +435,7 @@
                             </div>`;
                         stt++;
                     });
+
                     let addressHtml = order.diaChiGiaoHang ? `
                         <div class="col-md-6 border-start">
                             <h6 class="fw-bold text-uppercase text-secondary mb-2">Thông tin nhận hàng</h6>
@@ -274,30 +443,36 @@
                             <div class="small"><strong>Số điện thoại:</strong> ${order.diaChiGiaoHang.soDienThoaiNhan}</div>
                             <div class="small"><strong>Địa chỉ giao:</strong> ${order.diaChiGiaoHang.diaChiChiTiet}</div>
                         </div>` : '<div class="col-md-6 border-start text-muted small py-3">Đơn mua trực tiếp tại quầy bán hàng.</div>';
-                    let content = `
-                        <div class="row g-3 mb-4">
-                            <div class="col-md-6">
-                                <h6 class="fw-bold text-uppercase text-secondary mb-2">Thông tin tài khoản mua</h6>
-                                <div class="small"><strong>Khách hàng:</strong> ${order.khachHang.ten}</div>
-                                <div class="small"><strong>Email:</strong> ${order.khachHang.email}</div>
-                                <div class="small"><strong>Số điện thoại:</strong> ${order.khachHang.soDienThoai}</div>
-                            </div>
-                            ${addressHtml}
-                        </div>
-                        <div class="mb-3">
-                            <h6 class="fw-bold text-uppercase text-secondary mb-2">Danh sách sản phẩm đã đặt</h6>
-                            ${itemsHtml}
-                        </div>
-                        <div class="text-end bg-light p-3 rounded">
-                            <div class="small text-muted">Tổng tiền hàng gồm VAT: <strong>${order.tongTienVAT.toLocaleString('vi-VN')}đ</strong></div>
-                            <div class="small text-muted border-bottom pb-1 mb-1">Giảm giá voucher: <strong>-${order.tongTienGiamGia.toLocaleString('vi-VN')}đ</strong></div>
-                            <div class="fw-bold text-danger fs-5">Thành tiền thanh toán: ${order.thanhTien.toLocaleString('vi-VN')}đ</div>
-                        </div>`;
+
+                                                            let content = `
+                                            <div class="row g-3 mb-4">
+                                                <div class="col-md-6">
+                                                    <h6 class="fw-bold text-uppercase text-secondary mb-2">Thông tin tài khoản mua</h6>
+                                                    <div class="small"><strong>Khách hàng:</strong> ${order.khachHang.ten}</div>
+                                                    <div class="small"><strong>Email:</strong> ${order.khachHang.email}</div>
+                                                    <div class="small"><strong>Số điện thoại:</strong> ${order.khachHang.soDienThoai}</div>
+                                                </div>
+                                                ${addressHtml}
+                                            </div>
+                                            ${order.ghiChu ? `
+                                            <div class="alert alert-light border small mb-3">
+                                                <i class="bi bi-pencil-square me-1"></i>
+                                                <strong>Ghi chú đơn hàng:</strong> ${order.ghiChu}
+                                            </div>` : ''}
+                                            <div class="mb-3">
+                                                <h6 class="fw-bold text-uppercase text-secondary mb-2">Danh sách sản phẩm đã đặt</h6>
+                                                ${itemsHtml}
+                                            </div>
+                                            <div class="text-end bg-light p-3 rounded">
+                                                <div class="small text-muted">Tổng tiền hàng gồm VAT: <strong>${order.tongTienVAT.toLocaleString('vi-VN')}đ</strong></div>
+                                                <div class="small text-muted border-bottom pb-1 mb-1">Giảm giá voucher: <strong>-${order.tongTienGiamGia.toLocaleString('vi-VN')}đ</strong></div>
+                                                <div class="fw-bold text-danger fs-5">Thành tiền thanh toán: ${order.thanhTien.toLocaleString('vi-VN')}đ</div>
+                                            </div>`;
                     $('#modalOrderContent').html(content);
                 });
             });
 
-            // 4. XỬ LÝ NÚT TIẾN TRÌNH (ĐÃ SỬA ĐỂ HỖ TRỢ ACTION MỚI)
+            // 4. CHUYỂN TRẠNG THÁI ĐƠN HÀNG
             $(document).on('click', '.btn-process-order', function() {
                 const orderId = $('#modalOrderId').text();
                 const actionType = $(this).data('action');
@@ -336,14 +511,304 @@
                 });
             });
 
-            // Các sự kiện khác (RMA, In hóa đơn, Tìm kiếm, Phân trang) giữ nguyên
+            // 5. IN HÓA ĐƠN
+            $(document).on('click', '.btn-print-invoice', function() {
+                const orderId = $(this).data('id');
+                const customerName = $('#modalOrderContent').find('.small:contains("Khách hàng:")').text().replace('Khách hàng:', '').trim();
+                const customerPhone = $('#modalOrderContent').find('.small:contains("Số điện thoại:")').first().text().replace('Số điện thoại:', '').trim();
+                const address = $('#modalOrderContent').find('.small:contains("Địa chỉ giao:")').text().replace('Địa chỉ giao:', '').trim() || 'Mua tại quầy';
+                const orderTime = new Date().toLocaleString('vi-VN');
+                const totalVAT = $('#modalOrderContent').find('.small:contains("Tổng tiền hàng gồm VAT:")').text().replace('Tổng tiền hàng gồm VAT:', '').trim();
+                const discount = $('#modalOrderContent').find('.small:contains("Giảm giá voucher:")').text().replace('Giảm giá voucher:', '').trim();
+                const finalTotal = $('#modalOrderContent').find('.fw-bold.text-danger.fs-5').text().trim();
+
+                let itemsHtml = '';
+                let stt = 1;
+                $('#modalOrderContent').find('.d-flex.justify-content-between.align-items-center.py-2.border-bottom.small').each(function() {
+                    const maSP = $(this).find('.badge.bg-secondary').text();
+                    const name = $(this).find('.fw-bold.text-dark').text();
+                    const variant = $(this).find('.text-muted').text().replace('Phân loại:', '').trim();
+                    const qty = $(this).find('.text-muted').text().match(/Số lượng mua: (\d+)/)?.[1] || '1';
+                    const price = $(this).find('.fw-medium').text();
+                    itemsHtml += `<tr><td>${stt}</td><td>${maSP}</td><td>${name}</td><td>${variant}</td><td>${qty}</td><td class="text-right">${price}</td></tr>`;
+                    stt++;
+                });
+
+                const printContent = `
+                    <div class="invoice-header">
+                        <h2>WINTER FASHION SHOP</h2>
+                        <p>Địa chỉ: Sơn Tây, Hà Nội, Việt Nam</p>
+                        <p>Hotline: 098.765.4321</p>
+                        <h3>HÓA ĐƠN BÁN HÀNG</h3>
+                        <p>Mã HĐ: ${orderId}</p>
+                        <p>Ngày: ${orderTime}</p>
+                    </div>
+                    <div class="invoice-info">
+                        <div><strong>Khách hàng:</strong> ${customerName}</div>
+                        <div><strong>Điện thoại:</strong> ${customerPhone}</div>
+                        <div><strong>Địa chỉ:</strong> ${address}</div>
+                    </div>
+                    <table class="invoice-table">
+                        <thead><tr><th>STT</th><th>Mã SP</th><th>Tên sản phẩm</th><th>Phân loại</th><th>SL</th><th class="text-right">Đơn giá</th></tr></thead>
+                        <tbody>${itemsHtml}</tbody>
+                    </table>
+                    <div class="invoice-total">
+                        <p>Tổng tiền hàng (gồm VAT): ${totalVAT}</p>
+                        <p>Giảm giá: ${discount}</p>
+                        <h3>Thành tiền: ${finalTotal}</h3>
+                    </div>
+                    <p style="text-align: center; font-style: italic;">Cảm ơn quý khách đã mua hàng!</p>`;
+
+                $('#invoiceContent').html(printContent);
+                $('#invoicePrintArea').show();
+                window.print();
+                $('#invoicePrintArea').hide();
+            });
+
+            // 6. MODULE ĐỔI TRẢ (RMA)
+            $(document).on('click', '.btn-trigger-return', function() {
+                const orderId = $(this).data('id');
+                $('#orderModal').modal('hide');
+                $('#lblReturnOrderId').text(orderId);
+                $('#hidReturnOrderId').val(orderId);
+                $('#txtReturnGhiChu').val('');
+                $('#returnItemsTableBody').empty();
+
+                $.get(`/api/admin/orders/${orderId}`, function(order) {
+                    let rowsHtml = '';
+                    order.chiTietSanPham.forEach(item => {
+                        rowsHtml += `
+                            <tr class="row-return-item" data-sp-id="${item.chiTietSanPhamId}">
+                                <td class="text-center">
+                                    <input type="checkbox" class="form-check-input chk-return-select" style="cursor:pointer;" />
+                                </td>
+                                <td>
+                                    <div class="fw-bold">${item.tenSanPham}</div>
+                                    <small class="text-muted">Size: ${item.kichCo} | Màu: ${item.mauSac}</small>
+                                </td>
+                                <td class="fw-medium">${item.donGia.toLocaleString('vi-VN')}đ</td>
+                                <td class="text-secondary text-center">${item.soLuong}</td>
+                                <td>
+                                    <input type="number" class="form-control form-control-sm txt-return-qty" min="1" max="${item.soLuong}" value="1" disabled />
+                                </td>
+                                <td>
+                                    <select class="form-select form-select-sm sel-return-reason" disabled>
+                                        <option value="1">Sai Kích cỡ / Màu sắc</option>
+                                        <option value="0">Lỗi do Nhà sản xuất</option>
+                                        <option value="2">Hệ thống giao thiếu hàng</option>
+                                        <option value="3">Lý do Khác</option>
+                                    </select>
+                                </td>
+                            </tr>`;
+                    });
+                    $('#returnItemsTableBody').html(rowsHtml);
+                    $('#createReturnModal').modal('show');
+                });
+            });
+
+            $(document).on('change', '.chk-return-select', function() {
+                const row = $(this).closest('tr');
+                const isChecked = $(this).is(':checked');
+                row.find('.txt-return-qty, .sel-return-reason').prop('disabled', !isChecked);
+                if(isChecked) row.addClass('table-warning-subtle');
+                else row.removeClass('table-warning-subtle');
+            });
+
+            $('#frmCreateReturn').submit(function(e) {
+                e.preventDefault();
+                const selectedRows = $('.chk-return-select:checked').closest('tr');
+                if(selectedRows.length === 0) {
+                    alert("Vui lòng tick chọn ít nhất một mặt hàng khách muốn hoàn trả!");
+                    return;
+                }
+
+                let itemsArray = [];
+                selectedRows.each(function() {
+                    itemsArray.push({
+                        chiTietSanPhamId: $(this).data('sp-id'),
+                        soLuongTra: parseInt($(this).find('.txt-return-qty').val()),
+                        lyDoKey: parseInt($(this).find('.sel-return-reason').val())
+                    });
+                });
+
+                const payload = {
+                    hoaDonId: $('#hidReturnOrderId').val(),
+                    ghiChu: $('#txtReturnGhiChu').val(),
+                    items: itemsArray
+                };
+
+                $.ajax({
+                    url: '/api/admin/orders/returns',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(payload),
+                    success: function(res) {
+                        alert(res.message);
+                        $('#createReturnModal').modal('hide');
+                        var triggerEl = document.querySelector('#btn-tab-returns');
+                        bootstrap.Tab.getInstance(triggerEl).show();
+                    },
+                    error: function(err) { alert(err.responseJSON?.message || "Lỗi tạo yêu cầu đổi trả."); }
+                });
+            });
+
+            // 7. TẢI DANH SÁCH PHIẾU RMA
+            function loadReturnRequests() {
+                $('#returnsTableBody').html('<tr><td colspan="7" class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm me-2"></div>Đang rà soát phiếu RMA...</td></tr>');
+                $.get('/api/admin/orders/returns', function(data) {
+                    let html = '';
+                    if(!data || data.length === 0) {
+                        html = '<tr><td colspan="7" class="text-center py-4 text-muted">Chưa phát sinh yêu cầu đổi trả nào.</td></tr>';
+                    } else {
+                        data.forEach(rma => {
+                            let badgeClass = rma.trangThai === 0 ? 'bg-warning text-dark' : (rma.trangThai === 1 ? 'bg-success text-white' : 'bg-danger text-white');
+                            let approveBtn = `
+                                <div class="d-flex gap-1 justify-content-center flex-wrap">
+                                    <button class="btn btn-sm btn-outline-dark px-2 py-1 btn-view-rma-detail" data-id="${rma.phieuDoiTraID}" title="Xem chi tiết phiếu">
+                                        <i class="bi bi-eye me-1"></i>Chi tiết
+                                    </button>
+                                    ${rma.trangThai === 0 ? `
+                                        <button class="btn btn-sm btn-success px-2 py-1 btn-approve-return" data-id="${rma.phieuDoiTraID}">
+                                            <i class="bi bi-check-lg"></i> Duyệt
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger px-2 py-1 btn-reject-return" data-id="${rma.phieuDoiTraID}">
+                                            <i class="bi bi-x-lg"></i> Từ chối
+                                        </button>
+                                    ` : `<span class="badge bg-secondary text-white px-2 py-1 small">Đã xử lý</span>`}
+                                </div>`;
+                            html += `
+                                <tr>
+                                    <td class="font-monospace small fw-bold text-secondary">${rma.phieuDoiTraID}</td>
+                                    <td class="fw-bold text-dark">${rma.hoaDonID}</td>
+                                    <td class="small">${new Date(rma.ngayTao).toLocaleString('vi-VN')}</td>
+                                    <td class="fw-medium">${rma.tenKhachHang}</td>
+                                    <td class="fw-bold text-primary">${rma.tongTienHoan.toLocaleString('vi-VN')}đ</td>
+                                    <td class="text-center"><span class="badge ${badgeClass} px-2 py-1">${rma.trangThaiLabel}</span></td>
+                                    <td class="text-center">${approveBtn}</td>
+                                </tr>`;
+                        });
+                    }
+                    $('#returnsTableBody').html(html);
+                });
+            }
+
+            // 8. DUYỆT / TỪ CHỐI RMA
+            $(document).on('click', '.btn-approve-return', function() {
+                const returnId = $(this).data('id');
+                if(!confirm(`Xác nhận phê duyệt yêu cầu RMA [${returnId}]?\nHệ thống sẽ nhận lại hàng hoàn, đóng kho và cộng ngược lại số lượng tồn kho vật lý tự động.`)) return;
+                const btn = $(this);
+                btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
+                $.ajax({
+                    url: `/api/admin/orders/returns/${returnId}/approve`,
+                    type: 'PUT',
+                    success: function(res) {
+                        alert(res.message);
+                        loadReturnRequests();
+                    },
+                    error: function(err) {
+                        alert(err.responseJSON?.message || "Lỗi xử lý duyệt phiếu hoàn kho.");
+                        btn.prop('disabled', false).html('<i class="bi bi-check-lg"></i> Duyệt');
+                    }
+                });
+            });
+
+            $(document).on('click', '.btn-reject-return', function() {
+                const returnId = $(this).data('id');
+                if(!confirm(`Xác nhận TỪ CHỐI yêu cầu đổi trả mã [${returnId}]?`)) return;
+                $.ajax({
+                    url: `/api/admin/orders/returns/${returnId}/reject`,
+                    type: 'PUT',
+                    success: function(res) {
+                        alert(res.message);
+                        loadReturnRequests();
+                    },
+                    error: function() { alert("Lỗi hệ thống khi từ chối phiếu."); }
+                });
+            });
+
+            // 9. XEM CHI TIẾT PHIẾU RMA
+            $(document).on('click', '.btn-view-rma-detail', function () {
+                const returnId = $(this).data('id');
+                $('#rmaDetailId').text(returnId);
+                $('#rmaDetailContent').html(`
+                    <div class="text-center py-5 text-muted">
+                        <div class="spinner-border mb-2"></div>
+                        <p>Đang tải dữ liệu phiếu...</p>
+                    </div>`);
+                $('#rmaDetailModal').modal('show');
+
+                $.get(`/api/admin/orders/returns/${returnId}`, function (rma) {
+                    let itemsHtml = '';
+                    rma.items.forEach((item, i) => {
+                        itemsHtml += `
+                            <tr>
+                                <td class="text-center text-muted small">${i + 1}</td>
+                                <td>
+                                    <div class="fw-bold">${item.tenSanPham}</div>
+                                    <small class="text-muted">Size: ${item.kichCo} | Màu: ${item.mauSac}</small>
+                                </td>
+                                <td class="text-center">${item.soLuongTra}</td>
+                                <td class="fw-medium">${item.donGia.toLocaleString('vi-VN')}đ</td>
+                                <td class="fw-bold text-danger">${(item.donGia * item.soLuongTra).toLocaleString('vi-VN')}đ</td>
+                                <td><span class="badge bg-warning-subtle text-warning-emphasis border px-2">${item.lyDoLabel}</span></td>
+                            </tr>`;
+                    });
+
+                    let statusBadge = rma.trangThai === 0
+                        ? '<span class="badge bg-warning text-dark">Chờ duyệt kho</span>'
+                        : (rma.trangThai === 1
+                            ? '<span class="badge bg-success text-white">Đã duyệt hoàn kho</span>'
+                            : '<span class="badge bg-danger text-white">Đã từ chối</span>');
+
+                    $('#rmaDetailContent').html(`
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <h6 class="fw-bold text-uppercase text-secondary mb-2">Thông tin phiếu</h6>
+                                <div class="small"><strong>Mã phiếu RMA:</strong> ${rma.phieuDoiTraID}</div>
+                                <div class="small"><strong>Mã hóa đơn gốc:</strong>
+                                    <span class="text-primary fw-bold">${rma.hoaDonID}</span>
+                                </div>
+                                <div class="small"><strong>Ngày tạo phiếu:</strong>
+                                    ${new Date(rma.ngayTao).toLocaleString('vi-VN')}
+                                </div>
+                                <div class="small"><strong>Trạng thái:</strong> ${statusBadge}</div>
+                            </div>
+                            <div class="col-md-6 border-start">
+                                <h6 class="fw-bold text-uppercase text-secondary mb-2">Khách hàng</h6>
+                                <div class="small"><strong>Tên khách:</strong> ${rma.tenKhachHang}</div>
+                                <div class="small"><strong>Tổng giá trị hoàn:</strong>
+                                    <span class="fw-bold text-danger">${rma.tongTienHoan.toLocaleString('vi-VN')}đ</span>
+                                </div>
+                                ${rma.ghiChu ? `<div class="small mt-1"><strong>Ghi chú kho:</strong>
+                                    <span class="text-muted fst-italic">${rma.ghiChu}</span></div>` : ''}
+                            </div>
+                        </div>
+
+                        <h6 class="fw-bold text-uppercase text-secondary mb-2">Danh sách sản phẩm hoàn trả</h6>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm align-middle small">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width:40px">STT</th>
+                                        <th>Sản phẩm</th>
+                                        <th class="text-center" style="width:80px">SL Trả</th>
+                                        <th style="width:110px">Đơn giá</th>
+                                        <th style="width:120px">Thành tiền hoàn</th>
+                                        <th>Lý do</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${itemsHtml}</tbody>
+                            </table>
+                        </div>
+                    `);
+                }).fail(function () {
+                    $('#rmaDetailContent').html(`
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            Không thể tải dữ liệu phiếu RMA. Vui lòng thử lại.
+                        </div>`);
+                });
+            });
         });
     </script>
-    <style>
-        .badge-delivery_failed {
-            background-color: #fff3cd !important;
-            color: #856404 !important;
-            border: 1px solid #ffc107 !important;
-        }
-    </style>
 }

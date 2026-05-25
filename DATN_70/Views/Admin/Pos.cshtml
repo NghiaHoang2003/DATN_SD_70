@@ -894,9 +894,54 @@
             currentKieuPay = 2;
             processFinalCheckoutDB();
         });
-
-        function processFinalCheckoutDB() {
+                function resetActiveTab() {
             let activeTab = posTabs[activeTabIdx];
+            if (posTabs.length > 1) {
+                posTabs.splice(activeTabIdx, 1);
+                if (activeTabIdx >= posTabs.length) activeTabIdx = posTabs.length - 1;
+            } else {
+                activeTab.items = [];
+                activeTab.customerId = 'KH000000';
+                activeTab.customerName = 'Khách lẻ';
+                activeTab.customerPhone = '0000000000';
+                activeTab.selectedVoucherIds = [];
+                activeTab.voucherDiscounts = {};
+                activeTab.note = '';
+            }
+            $('#numCustomerCash').val('');
+            renderTabsHeaders();
+            loadActiveTabToSidebarCart();
+            loadProductsFromWarehouse();
+        }
+                function processFinalCheckoutDB() {
+            let activeTab = posTabs[activeTabIdx];
+
+            // ========== TRƯỜNG HỢP XÁC NHẬN QR (KieuThanhToan = 2) ==========
+            if (currentKieuPay === 2 && currentCheckoutHoaDonId) {
+                $.ajax({
+                    url: `/api/admin/pos/checkout/${currentCheckoutHoaDonId}/confirm-payment`,
+                    type: 'PUT',
+                    contentType: 'application/json',
+                    success: function(res) {
+                        executeInvoicePrintJob(
+                            res.hoaDonID,
+                            res.thoiGian,
+                            activeTab,
+                            res.tongTienHang,
+                            res.tongTienVAT,
+                            res.tongGiamGia
+                        );
+                        currentCheckoutHoaDonId = null;
+                        resetActiveTab();
+                    },
+                    error: function(err) {
+                        alert(err.responseJSON?.message || "Lỗi xác nhận thanh toán.");
+                    }
+                });
+                return;
+            }
+
+            // ========== TRƯỜNG HỢP TIỀN MẶT / TẠO QR BAN ĐẦU ==========
             let payload = {
                 KhachHangID: activeTab.customerId,
                 DiaChiID: "DC_POS_SYSTEM",
@@ -913,6 +958,12 @@
                 contentType: 'application/json',
                 data: JSON.stringify(payload),
                 success: function(res) {
+                    // Nếu là tạo QR (KieuThanhToan = 1) thì không in ngay, chỉ hiện modal
+                    if (currentKieuPay === 1) {
+                        // Không in, chỉ lưu ID để xác nhận sau
+                        return;
+                    }
+                    // Tiền mặt: in luôn
                     executeInvoicePrintJob(
                         res.hoaDonId,
                         res.thoiGian,
@@ -921,22 +972,7 @@
                         res.tongTienVAT,
                         res.tongGiamGia
                     );
-                    if (posTabs.length > 1) {
-                        posTabs.splice(activeTabIdx, 1);
-                        if (activeTabIdx >= posTabs.length) activeTabIdx = posTabs.length - 1;
-                    } else {
-                        activeTab.items = [];
-                        activeTab.customerId = 'KH000000';
-                        activeTab.customerName = 'Khách lẻ';
-                        activeTab.customerPhone = '0000000000';
-                        activeTab.selectedVoucherIds = [];
-                        activeTab.voucherDiscounts = {};
-                        activeTab.note = '';
-                    }
-                    $('#numCustomerCash').val('');
-                    renderTabsHeaders();
-                    loadActiveTabToSidebarCart();
-                    loadProductsFromWarehouse();
+                    resetActiveTab();
                 },
                 error: function(err) { alert(err.responseJSON?.message || "Giao dịch thất bại."); }
             });

@@ -52,7 +52,6 @@ namespace DATN_70.Controllers
 
                 if (chiTietThanhToan == null)
                 {
-                    // Kiểm tra xem có phải là intent QR không
                     Console.WriteLine($"[WEBHOOK] Không tìm thấy giao dịch với mã: {currentOrderCodeStr}");
                     return Ok(new { success = true, message = "Không tìm thấy giao dịch tương ứng." });
                 }
@@ -64,52 +63,12 @@ namespace DATN_70.Controllers
                     return Ok(new { success = true, message = "Giao dịch đã được xử lý." });
                 }
 
-                // 4. Cập nhật trạng thái thanh toán
+                // 4. Cập nhật trạng thái thanh toán -> Thành công
                 chiTietThanhToan.TrangThai = Enums.TrangThaiThanhToan.ThanhCong;
+                await _dbContext.SaveChangesAsync(); // Chỉ lưu thay đổi này thôi
 
-                // 5. Xử lý hóa đơn: tìm và chuyển trạng thái từ "Chờ thanh toán QR" sang "Đã xác nhận"
-                var hoaDon = await _dbContext.HoaDons
-                    .FirstOrDefaultAsync(h => h.HoaDonID == chiTietThanhToan.HoaDonID);
-
-                if (hoaDon != null)
-                {
-                    // Kiểm tra xem đơn hàng có đang ở trạng thái có thể xác nhận không
-                    bool canConfirm = hoaDon.TrangThai == Enums.TrangThaiHoaDon.ChoDuyet ||
-                                      hoaDon.TrangThai == Enums.TrangThaiHoaDon.DangChoThanhToanQR;
-
-                    if (canConfirm)
-                    {
-                        // Nếu là đơn QR (trạng thái 7), cần trừ kho trước khi đổi trạng thái
-                        if (hoaDon.TrangThai == Enums.TrangThaiHoaDon.DangChoThanhToanQR)
-                        {
-                            var chiTietHoaDon = await _dbContext.HoaDonChiTiets
-                                .Where(hdct => hdct.HoaDonID == hoaDon.HoaDonID)
-                                .ToListAsync();
-
-                            foreach (var item in chiTietHoaDon)
-                            {
-                                var ctsp = await _dbContext.ChiTietSanPhams
-                                    .FirstOrDefaultAsync(ct => ct.ChiTietSanPhamID == item.ChiTietSanPhamID);
-                                if (ctsp != null)
-                                {
-                                    ctsp.SoLuongTonKho -= item.SoLuong;
-                                }
-                            }
-                        }
-
-                        // Sau khi đã trừ kho (nếu cần), mới chính thức chuyển trạng thái
-                        hoaDon.TrangThai = Enums.TrangThaiHoaDon.DaXacNhan;
-                        Console.WriteLine($"[WEBHOOK] Đơn hàng {hoaDon.HoaDonID} đã được xác nhận thành công.");
-                    }
-                    else
-                    {
-                        Console.WriteLine($"[WEBHOOK] Đơn hàng {hoaDon.HoaDonID} không ở trạng thái có thể xác nhận. Trạng thái hiện tại: {hoaDon.TrangThai}");
-                    }
-                }
-
-                await _dbContext.SaveChangesAsync();
-
-                return Ok(new { success = true, message = "Cập nhật thanh toán thành công." });
+                Console.WriteLine($"[WEBHOOK] Đã ghi nhận thanh toán thành công cho OrderCode={currentOrderCodeStr}. Chờ nhân viên xác nhận in hóa đơn.");
+                return Ok(new { success = true, message = "Ghi nhận thanh toán thành công." });
             }
             catch (Exception ex)
             {

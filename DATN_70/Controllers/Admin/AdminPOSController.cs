@@ -266,7 +266,64 @@ public class AdminPOSController : ControllerBase
         await _dbContext.SaveChangesAsync(cancellationToken);
         return Ok(new { message = "Đã hủy đơn hàng thành công." });
     }
+    [HttpPut("checkout/{hoaDonId}/confirm-payment")]
+    public async Task<IActionResult> ConfirmQRPayment(string hoaDonId, CancellationToken cancellationToken)
+    {
+        // 1. Tìm hóa đơn và bao gồm các chi tiết thanh toán
+        var hoaDon = await _dbContext.HoaDons
+            .Include(h => h.ChiTietThanhToans)
+            .FirstOrDefaultAsync(h => h.HoaDonID == hoaDonId, cancellationToken);
 
+        if (hoaDon == null)
+            return NotFound(new { message = "Không tìm thấy hóa đơn." });
+
+        // 2. Kiểm tra trạng thái: phải là Chờ thanh toán QR hoặc Chờ duyệt (đối với một số đơn cũ)
+        bool isValidStatus = hoaDon.TrangThai == Enums.TrangThaiHoaDon.DangChoThanhToanQR
+                          || hoaDon.TrangThai == Enums.TrangThaiHoaDon.ChoDuyet;
+
+        if (!isValidStatus)
+            return BadRequest(new { message = "Hóa đơn không ở trạng thái chờ thanh toán QR." });
+
+        // 3. Kiểm tra xem đã có thanh toán thành công chưa (webhook đã gọi về)
+        var thanhToan = hoaDon.ChiTietThanhToans?
+            .FirstOrDefault(ct => ct.TrangThai == Enums.TrangThaiThanhToan.ThanhCong
+                               && !string.IsNullOrEmpty(ct.MaThamChieu));
+
+        if (thanhToan == null)
+            return BadRequest(new { message = "Chưa nhận được thanh toán từ khách hàng. Vui lòng chờ 'ting ting'." });
+
+        // 4. Thực hiện trừ kho
+        var chiTietHoaDon = await _dbContext.HoaDonChiTiets
+            .Where(hdct => hdct.HoaDonID == hoaDonId)
+            .ToListAsync(cancellationToken);
+
+        foreach (var item in chiTietHoaDon)
+        {
+            var ctsp = await _dbContext.ChiTietSanPhams
+                .FirstOrDefaultAsync(ct => ct.ChiTietSanPhamID == item.ChiTietSanPhamID, cancellationToken);
+            if (ctsp != null)
+            {
+                ctsp.SoLuongTonKho -= item.SoLuong;
+                if (ctsp.SoLuongTonKho < 0)
+                    return BadRequest(new { message = $"Sản phẩm {ctsp.SKU} không đủ số lượng tồn kho." });
+            }
+        }
+
+        // 5. Cập nhật trạng thái hóa đơn thành Hoàn thành
+        hoaDon.TrangThai = Enums.TrangThaiHoaDon.HoanThanh;
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        // 6. Trả về thông tin để in hóa đơn
+        return Ok(new
+        {
+            message = "Xác nhận thanh toán thành công.",
+            hoaDonID = hoaDon.HoaDonID,
+            thoiGian = hoaDon.NgayTao,
+            tongTienHang = (decimal)hoaDon.ThanhTien - (decimal)hoaDon.TongTienVAT + (decimal)hoaDon.TongTienGiamGia,
+            tongTienVAT = (decimal)hoaDon.TongTienVAT,
+            tongGiamGia = (decimal)hoaDon.TongTienGiamGia
+        });
+    }
     // ==========================================
     // 4. XỬ LÝ THANH TOÁN (đã sửa logic giảm giá + VAT)
     // ==========================================
@@ -556,9 +613,9 @@ public class AdminPOSController : ControllerBase
                 TongTienGiamGia = (double)tongTienGiamGiaVoucher,
                 ThanhTien = (double)thanhTienCuoiCung,
                 LoaiGiaoDich = Enums.LoaiGiaoDich.PosTaiQuay,
-                TrangThai = request.KieuThanhToan == 1 ? Enums.TrangThaiHoaDon.ChoDuyet
-                            : (request.KieuThanhToan == 2 ? Enums.TrangThaiHoaDon.HoanThanh
-                            : Enums.TrangThaiHoaDon.HoanThanh),
+                TrangThai = request.KieuThanhToan == 1 ? Enums.TrangThaiHoaDon.DangChoThanhToanQR
+            : (request.KieuThanhToan == 2 ? Enums.TrangThaiHoaDon.HoanThanh
+            : Enums.TrangThaiHoaDon.HoanThanh),
                 GhiChu = request.GhiChu ?? "Bán hàng tại quầy POS",
                 KhachHangID = finalKhachHangId,
                 DiaChiID = string.IsNullOrWhiteSpace(request.DiaChiID) ? "DC_POS_SYSTEM" : request.DiaChiID,
