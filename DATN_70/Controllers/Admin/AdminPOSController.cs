@@ -8,6 +8,7 @@ using System.ComponentModel.DataAnnotations;
 using PayOS;
 using PayOS.Models;
 using PayOS.Models.V2.PaymentRequests;
+using System.Text.Json;
 
 namespace DATN_70.Controllers.Admin;
 
@@ -31,12 +32,13 @@ public class AdminPOSController : ControllerBase
     public async Task<IActionResult> GetProductsForPOS(CancellationToken cancellationToken)
     {
         var now = DateTime.Now;
+        // Sửa logic xác định khuyến mãi toàn sàn: không có DanhMucID và không có sản phẩm liên kết
         var globalPromo = await _dbContext.KhuyenMais
-            .Where(k => k.MaCode == null
+            .Where(k => string.IsNullOrEmpty(k.DanhMucID)
+                        && !k.KhuyenMaiSanPhams.Any()
                         && k.TrangThai == Enums.TrangThaiHoatDong.HoatDong
                         && k.NgayApDung <= now && k.NgayKetThuc >= now
-                        && k.SoLuongDaDung < k.SoLuongToiDa
-                        && !k.KhuyenMaiSanPhams.Any())
+                        && k.SoLuongDaDung < k.SoLuongToiDa)
             .OrderByDescending(k => k.GiaTriGiam)
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -209,7 +211,7 @@ public class AdminPOSController : ControllerBase
             }
             else
             {
-                isApplicable = true;
+                isApplicable = true; // toàn sàn
             }
 
             if (isApplicable)
@@ -243,18 +245,25 @@ public class AdminPOSController : ControllerBase
 
         if (hoaDon == null) return NotFound(new { message = "Không tìm thấy hóa đơn." });
 
-        if (hoaDon.TrangThai != Enums.TrangThaiHoaDon.ChoDuyet)
+        // Cho phép hủy nếu trạng thái là ChoDuyet (0) hoặc DangChoThanhToanQR (7)
+        bool canCancel = hoaDon.TrangThai == Enums.TrangThaiHoaDon.ChoDuyet
+                      || hoaDon.TrangThai == Enums.TrangThaiHoaDon.DangChoThanhToanQR;
+
+        if (!canCancel)
             return BadRequest(new { message = "Chỉ có thể hủy hóa đơn đang chờ thanh toán QR." });
 
-        // Hoàn trả tồn kho
-        foreach (var chiTiet in hoaDon.HoaDonChiTiets)
+        // Nếu là DangChoThanhToanQR, kho chưa bị trừ -> không cần hoàn kho
+        if (hoaDon.TrangThai == Enums.TrangThaiHoaDon.ChoDuyet)
         {
-            var ctsp = await _dbContext.ChiTietSanPhams.FindAsync(new object[] { chiTiet.ChiTietSanPhamID }, cancellationToken);
-            if (ctsp != null)
-                ctsp.SoLuongTonKho += chiTiet.SoLuong;
+            foreach (var chiTiet in hoaDon.HoaDonChiTiets)
+            {
+                var ctsp = await _dbContext.ChiTietSanPhams.FindAsync(new object[] { chiTiet.ChiTietSanPhamID }, cancellationToken);
+                if (ctsp != null)
+                    ctsp.SoLuongTonKho += chiTiet.SoLuong;
+            }
         }
 
-        // Hoàn trả lượt dùng voucher toàn sàn (nếu có)
+        // Hoàn trả lượt dùng khuyến mãi toàn sàn (nếu có)
         if (!string.IsNullOrEmpty(hoaDon.KhuyenMaiID))
         {
             var km = await _dbContext.KhuyenMais.FindAsync(new object[] { hoaDon.KhuyenMaiID }, cancellationToken);
@@ -262,10 +271,26 @@ public class AdminPOSController : ControllerBase
                 km.SoLuongDaDung -= 1;
         }
 
+        // Hoàn trả lượt dùng voucher (nếu có)
+        if (!string.IsNullOrEmpty(hoaDon.VoucherData))
+        {
+            var voucherIds = JsonSerializer.Deserialize<List<string>>(hoaDon.VoucherData);
+            if (voucherIds != null)
+            {
+                foreach (var voucherId in voucherIds)
+                {
+                    var voucher = await _dbContext.KhuyenMais.FindAsync(new object[] { voucherId }, cancellationToken);
+                    if (voucher != null && voucher.SoLuongDaDung > 0)
+                        voucher.SoLuongDaDung -= 1;
+                }
+            }
+        }
+
         hoaDon.TrangThai = Enums.TrangThaiHoaDon.DaHuy;
         await _dbContext.SaveChangesAsync(cancellationToken);
         return Ok(new { message = "Đã hủy đơn hàng thành công." });
     }
+
     [HttpPut("checkout/{hoaDonId}/confirm-payment")]
     public async Task<IActionResult> ConfirmQRPayment(string hoaDonId, CancellationToken cancellationToken)
     {
@@ -277,14 +302,14 @@ public class AdminPOSController : ControllerBase
         if (hoaDon == null)
             return NotFound(new { message = "Không tìm thấy hóa đơn." });
 
-        // 2. Kiểm tra trạng thái: phải là Chờ thanh toán QR hoặc Chờ duyệt (đối với một số đơn cũ)
+        // 2. Kiểm tra trạng thái
         bool isValidStatus = hoaDon.TrangThai == Enums.TrangThaiHoaDon.DangChoThanhToanQR
                           || hoaDon.TrangThai == Enums.TrangThaiHoaDon.ChoDuyet;
 
         if (!isValidStatus)
             return BadRequest(new { message = "Hóa đơn không ở trạng thái chờ thanh toán QR." });
 
-        // 3. Kiểm tra xem đã có thanh toán thành công chưa (webhook đã gọi về)
+        // 3. Kiểm tra thanh toán thành công
         var thanhToan = hoaDon.ChiTietThanhToans?
             .FirstOrDefault(ct => ct.TrangThai == Enums.TrangThaiThanhToan.ThanhCong
                                && !string.IsNullOrEmpty(ct.MaThamChieu));
@@ -309,11 +334,34 @@ public class AdminPOSController : ControllerBase
             }
         }
 
-        // 5. Cập nhật trạng thái hóa đơn thành Hoàn thành
+        // 5. Trừ khuyến mãi toàn sàn (nếu có)
+        if (!string.IsNullOrEmpty(hoaDon.KhuyenMaiID))
+        {
+            var km = await _dbContext.KhuyenMais.FindAsync(new object[] { hoaDon.KhuyenMaiID }, cancellationToken);
+            if (km != null && (km.SoLuongToiDa == 0 || km.SoLuongDaDung < km.SoLuongToiDa))
+                km.SoLuongDaDung += 1;
+        }
+
+        // 6. Trừ voucher (nếu có)
+        if (!string.IsNullOrEmpty(hoaDon.VoucherData))
+        {
+            var voucherIds = JsonSerializer.Deserialize<List<string>>(hoaDon.VoucherData);
+            if (voucherIds != null)
+            {
+                foreach (var voucherId in voucherIds)
+                {
+                    var voucher = await _dbContext.KhuyenMais.FindAsync(new object[] { voucherId }, cancellationToken);
+                    if (voucher != null && (voucher.SoLuongToiDa == 0 || voucher.SoLuongDaDung < voucher.SoLuongToiDa))
+                        voucher.SoLuongDaDung += 1;
+                }
+            }
+        }
+
+        // 7. Cập nhật trạng thái hóa đơn thành Hoàn thành
         hoaDon.TrangThai = Enums.TrangThaiHoaDon.HoanThanh;
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        // 6. Trả về thông tin để in hóa đơn
+        // 8. Trả về thông tin để in hóa đơn
         return Ok(new
         {
             message = "Xác nhận thanh toán thành công.",
@@ -324,8 +372,9 @@ public class AdminPOSController : ControllerBase
             tongGiamGia = (decimal)hoaDon.TongTienGiamGia
         });
     }
+
     // ==========================================
-    // 4. XỬ LÝ THANH TOÁN (đã sửa logic giảm giá + VAT)
+    // 4. XỬ LÝ THANH TOÁN
     // ==========================================
 
     [HttpPost("checkout")]
@@ -391,24 +440,24 @@ public class AdminPOSController : ControllerBase
                 await _dbContext.SaveChangesAsync(cancellationToken);
             }
 
-            // 1️⃣ Khuyến mãi toàn sàn (Loại 1)
+            // 1️⃣ Khuyến mãi toàn sàn (Loại 1) - sửa logic xác định toàn sàn
             var now = DateTime.Now;
             var globalPromo = await _dbContext.KhuyenMais
-                .Where(k => k.MaCode == null
+                .Where(k => string.IsNullOrEmpty(k.DanhMucID)
+                            && !k.KhuyenMaiSanPhams.Any()
                             && k.TrangThai == Enums.TrangThaiHoatDong.HoatDong
                             && k.NgayApDung <= now && k.NgayKetThuc >= now
-                            && k.SoLuongDaDung < k.SoLuongToiDa
-                            && !k.KhuyenMaiSanPhams.Any())
+                            && k.SoLuongDaDung < k.SoLuongToiDa)
                 .OrderByDescending(k => k.GiaTriGiam)
                 .FirstOrDefaultAsync(cancellationToken);
 
             var hoaDonId = "POS" + Guid.NewGuid().ToString("N").Substring(0, 8).ToUpper();
-            decimal tongTienHang = 0;   // sẽ tính lại sau khi có giá cuối cùng
+            decimal tongTienHang = 0;
             decimal tongTienVAT = 0;
             var chiTietList = new List<HoaDonChiTiet>();
             var cartItems = new List<(string ChiTietSanPhamID, int SoLuong, decimal DonGiaSauGlobal, string? DanhMucID, string SanPhamID, decimal MucVAT)>();
 
-            // Bước 1: Tính giá sau KM toàn sàn và lưu vào cartItems, chưa lưu vào chiTietList vội
+            // Bước 1: Tính giá sau KM toàn sàn và lưu vào cartItems
             foreach (var item in request.Items)
             {
                 var ctsp = await _dbContext.ChiTietSanPhams
@@ -418,7 +467,9 @@ public class AdminPOSController : ControllerBase
                 if (ctsp == null) return BadRequest(new { message = $"Không tìm thấy sản phẩm mã {item.ChiTietSanPhamID}" });
                 if (ctsp.SoLuongTonKho < item.SoLuongMua) return BadRequest(new { message = $"Sản phẩm {ctsp.SanPham.Ten} không đủ tồn kho (Còn {ctsp.SoLuongTonKho})." });
 
-                ctsp.SoLuongTonKho -= item.SoLuongMua;
+                // Không trừ kho ngay nếu là QR (để dành cho ConfirmQRPayment)
+                if (request.KieuThanhToan != 1) // không phải QR -> trừ ngay
+                    ctsp.SoLuongTonKho -= item.SoLuongMua;
 
                 decimal donGiaSauGlobal = ctsp.GiaNiemYet;
                 if (globalPromo != null)
@@ -443,7 +494,8 @@ public class AdminPOSController : ControllerBase
             // 2️⃣ Xử lý voucher Loại 2 & tính giảm giá cho từng sản phẩm
             decimal tongTienGiamGiaVoucher = 0;
             var selectedVoucherIds = request.VoucherIds ?? new List<string>();
-            var discountPerProduct = new Dictionary<string, decimal>(); // key: ChiTietSanPhamID, value: tổng tiền giảm (cho cả dòng)
+            var discountPerProduct = new Dictionary<string, decimal>();
+            var usedVoucherIds = new List<string>();
 
             if (selectedVoucherIds.Any())
             {
@@ -508,7 +560,6 @@ public class AdminPOSController : ControllerBase
                         }
                     }
 
-                    // Gom nhóm giảm giá theo voucher để kiểm tra điều kiện đơn tối thiểu
                     var discountByVoucher = new Dictionary<string, (decimal Discount, decimal MinOrder, int Remaining)>();
 
                     foreach (var kvp in bestVoucherPerProduct)
@@ -525,7 +576,6 @@ public class AdminPOSController : ControllerBase
                         discountByVoucher[voucherId] = (entry.Discount + discount, entry.MinOrder, entry.Remaining);
                     }
 
-                    // Loại voucher không đạt điều kiện giá trị đơn hàng tối thiểu
                     foreach (var voucherId in discountByVoucher.Keys.ToList())
                     {
                         var (totalDiscount, minOrder, _) = discountByVoucher[voucherId];
@@ -548,27 +598,33 @@ public class AdminPOSController : ControllerBase
                             var productsToRemove = bestVoucherPerProduct.Where(kvp => kvp.Value.VoucherId == voucherId).Select(kvp => kvp.Key).ToList();
                             foreach (var pid in productsToRemove) bestVoucherPerProduct.Remove(pid);
                         }
+                        else
+                        {
+                            usedVoucherIds.Add(voucherId);
+                        }
                     }
 
-                    // Tính tổng giảm giá & lưu discountPerProduct
                     foreach (var kvp in bestVoucherPerProduct)
                     {
-                        var chiTietId = kvp.Key;
-                        var discount = kvp.Value.TienGiam;
-                        discountPerProduct[chiTietId] = discount;
-                        tongTienGiamGiaVoucher += discount;
+                        discountPerProduct[kvp.Key] = kvp.Value.TienGiam;
+                        tongTienGiamGiaVoucher += kvp.Value.TienGiam;
                     }
 
-                    // Tăng lượt dùng
-                    foreach (var voucherId in discountByVoucher.Keys)
+                    // Tăng lượt dùng ngay cho tiền mặt, còn QR sẽ tăng trong ConfirmQRPayment
+                    if (request.KieuThanhToan == 0) // Tiền mặt
                     {
-                        var voucher = vouchers.First(v => v.KhuyenMaiID == voucherId);
-                        voucher.SoLuongDaDung += 1;
+                        foreach (var voucherId in usedVoucherIds)
+                        {
+                            var voucher = vouchers.First(v => v.KhuyenMaiID == voucherId);
+                            voucher.SoLuongDaDung += 1;
+                        }
+                        if (globalPromo != null)
+                            globalPromo.SoLuongDaDung += 1;
                     }
                 }
             }
 
-            // 3️⃣ Xây dựng lại chiTietList với giá cuối cùng và VAT tương ứng
+            // 3️⃣ Xây dựng chiTietList
             chiTietList.Clear();
             tongTienHang = 0;
             tongTienVAT = 0;
@@ -614,13 +670,14 @@ public class AdminPOSController : ControllerBase
                 ThanhTien = (double)thanhTienCuoiCung,
                 LoaiGiaoDich = Enums.LoaiGiaoDich.PosTaiQuay,
                 TrangThai = request.KieuThanhToan == 1 ? Enums.TrangThaiHoaDon.DangChoThanhToanQR
-            : (request.KieuThanhToan == 2 ? Enums.TrangThaiHoaDon.HoanThanh
-            : Enums.TrangThaiHoaDon.HoanThanh),
+                            : (request.KieuThanhToan == 2 ? Enums.TrangThaiHoaDon.HoanThanh
+                            : Enums.TrangThaiHoaDon.HoanThanh),
                 GhiChu = request.GhiChu ?? "Bán hàng tại quầy POS",
                 KhachHangID = finalKhachHangId,
                 DiaChiID = string.IsNullOrWhiteSpace(request.DiaChiID) ? "DC_POS_SYSTEM" : request.DiaChiID,
                 NhanVienID = finalNhanVienId,
                 KhuyenMaiID = globalPromo?.KhuyenMaiID,
+                VoucherData = usedVoucherIds.Any() ? JsonSerializer.Serialize(usedVoucherIds) : null,
                 NgayTao = DateTime.Now
             };
 
@@ -643,9 +700,6 @@ public class AdminPOSController : ControllerBase
             _dbContext.HoaDons.Add(hoaDon);
             _dbContext.HoaDonChiTiets.AddRange(chiTietList);
             _dbContext.Set<ChiTietThanhToan>().Add(cttt);
-
-            if (globalPromo != null)
-                globalPromo.SoLuongDaDung += 1;
 
             await _dbContext.SaveChangesAsync(cancellationToken);
 
@@ -677,8 +731,8 @@ public class AdminPOSController : ControllerBase
                 kieuThanhToan = request.KieuThanhToan,
                 checkoutUrl = payOsCheckoutUrl,
                 orderCode = finalMaThamChieu,
-                tongTienHang = tongTienHang,      // tổng tiền hàng sau tất cả giảm giá
-                tongTienVAT = tongTienVAT,        // tổng VAT thực tế
+                tongTienHang = tongTienHang,
+                tongTienVAT = tongTienVAT,
                 tongGiamGia = tongTienGiamGiaVoucher
             });
         }

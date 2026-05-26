@@ -24,11 +24,15 @@ public sealed class AdminPromotionsController : ControllerBase
     // PHƯƠNG THỨC DÙNG CHUNG
     // ==========================================
 
+    /// <summary>
+    /// Kiểm tra xem có khuyến mãi toàn sàn nào đang hoạt động không.
+    /// Toàn sàn được định nghĩa: không có DanhMucID và không có sản phẩm liên kết.
+    /// </summary>
     private async Task<bool> HasActiveGlobalPromo(string? excludePromoId = null)
     {
         var query = _dbContext.KhuyenMais.Where(k =>
-            k.MaCode == null &&
             k.TrangThai == Enums.TrangThaiHoatDong.HoatDong &&
+            string.IsNullOrEmpty(k.DanhMucID) &&
             !k.KhuyenMaiSanPhams.Any()
         );
 
@@ -102,7 +106,7 @@ public sealed class AdminPromotionsController : ControllerBase
             var promo = await _dbContext.KhuyenMais
                 .Include(k => k.KhuyenMaiSanPhams)
                     .ThenInclude(ks => ks.SanPham)
-                .Include(k => k.DanhMucRef) // MỚI: lấy thông tin danh mục
+                .Include(k => k.DanhMucRef)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(k => k.KhuyenMaiID == id, cancellationToken);
 
@@ -124,8 +128,8 @@ public sealed class AdminPromotionsController : ControllerBase
                 NgayApDung = promo.NgayApDung,
                 NgayKetThuc = promo.NgayKetThuc,
                 TrangThai = (int)promo.TrangThai,
-                DanhMucId = promo.DanhMucID,                        // MỚI
-                TenDanhMuc = promo.DanhMucRef?.Ten ?? string.Empty,  // MỚI
+                DanhMucId = promo.DanhMucID,
+                TenDanhMuc = promo.DanhMucRef?.Ten ?? string.Empty,
                 DanhSachSanPhamApDung = promo.KhuyenMaiSanPhams.Select(ks => new AdminPromoProductDto
                 {
                     SanPhamId = ks.SanPhamID,
@@ -167,6 +171,10 @@ public sealed class AdminPromotionsController : ControllerBase
     {
         try
         {
+            // BẮT BUỘC nhập MaCode
+            if (string.IsNullOrWhiteSpace(request.MaCode))
+                return BadRequest(new { message = "Mã Code là bắt buộc. Vui lòng nhập mã khuyến mãi." });
+
             if (request.NgayKetThuc <= request.NgayApDung)
                 return BadRequest(new { message = "Ngày kết thúc phải lớn hơn ngày áp dụng." });
 
@@ -174,18 +182,14 @@ public sealed class AdminPromotionsController : ControllerBase
                 return BadRequest(new { message = "Mức giảm phần trăm không được vượt quá 100%." });
 
             // Kiểm tra trùng MaCode
-            if (!string.IsNullOrWhiteSpace(request.MaCode))
-            {
-                if (await IsMaCodeDuplicate(request.MaCode.Trim().ToUpper()))
-                    return BadRequest(new { message = "Mã Code này đã tồn tại. Vui lòng chọn mã khác." });
-            }
+            string maCode = request.MaCode.Trim().ToUpper();
+            if (await IsMaCodeDuplicate(maCode))
+                return BadRequest(new { message = "Mã Code này đã tồn tại. Vui lòng chọn mã khác." });
 
-            // Kiểm tra chỉ 1 mã toàn sàn hoạt động
-            if (request.PhamVi == "all" && string.IsNullOrWhiteSpace(request.MaCode))
-            {
-                if (await HasActiveGlobalPromo())
-                    return BadRequest(new { message = "Đã có một chương trình khuyến mãi toàn sàn đang hoạt động. Vui lòng tắt chương trình cũ trước khi tạo mới." });
-            }
+            // Kiểm tra nếu là toàn sàn (không danh mục, không sản phẩm) thì chỉ được 1 cái hoạt động
+            bool isGlobal = string.IsNullOrWhiteSpace(request.DanhMucId) && (request.SanPhamIds == null || !request.SanPhamIds.Any());
+            if (isGlobal && await HasActiveGlobalPromo())
+                return BadRequest(new { message = "Đã có một chương trình khuyến mãi toàn sàn khác đang hoạt động. Vui lòng tắt nó trước khi tạo mới." });
 
             var newId = $"KM{DateTime.Now.Ticks.ToString().Substring(8, 6)}";
 
@@ -193,7 +197,7 @@ public sealed class AdminPromotionsController : ControllerBase
             {
                 KhuyenMaiID = newId,
                 Ten = request.Ten.Trim(),
-                MaCode = string.IsNullOrWhiteSpace(request.MaCode) ? null : request.MaCode.Trim().ToUpper(),
+                MaCode = maCode,
                 MoTa = request.MoTa?.Trim() ?? string.Empty,
                 LoaiGiamGia = (Enums.LoaiGiamGia)request.LoaiGiamGia,
                 GiaTriGiam = request.GiaTriGiam,
@@ -207,18 +211,18 @@ public sealed class AdminPromotionsController : ControllerBase
             };
 
             // Xử lý phạm vi
-            if (request.PhamVi == "category" && !string.IsNullOrWhiteSpace(request.DanhMucId))
+            if (!string.IsNullOrWhiteSpace(request.DanhMucId))
             {
-                promo.DanhMucID = request.DanhMucId; // Gán trực tiếp danh mục
+                promo.DanhMucID = request.DanhMucId;
             }
-            else if (request.PhamVi == "product" && request.SanPhamIds != null && request.SanPhamIds.Any())
+            else if (request.SanPhamIds != null && request.SanPhamIds.Any())
             {
                 foreach (var spId in request.SanPhamIds)
                 {
                     _dbContext.KhuyenMaiSanPhams.Add(new KhuyenMaiSanPham { KhuyenMaiID = newId, SanPhamID = spId });
                 }
             }
-            // Nếu "all" thì không cần thêm gì
+            // Nếu không danh mục và không sản phẩm -> toàn sàn (không cần thêm gì)
 
             _dbContext.KhuyenMais.Add(promo);
             await _dbContext.SaveChangesAsync(cancellationToken);
@@ -242,27 +246,26 @@ public sealed class AdminPromotionsController : ControllerBase
             if (promo is null)
                 return NotFound(new { message = "Không tìm thấy chương trình khuyến mãi." });
 
+            // BẮT BUỘC nhập MaCode
+            if (string.IsNullOrWhiteSpace(request.MaCode))
+                return BadRequest(new { message = "Mã Code là bắt buộc. Vui lòng nhập mã khuyến mãi." });
+
             if (request.NgayKetThuc <= request.NgayApDung)
                 return BadRequest(new { message = "Ngày kết thúc phải lớn hơn ngày áp dụng." });
 
             if (request.LoaiGiamGia == 1 && request.GiaTriGiam > 100)
                 return BadRequest(new { message = "Mức giảm phần trăm không được vượt quá 100%." });
 
-            string? newMaCode = string.IsNullOrWhiteSpace(request.MaCode) ? null : request.MaCode.Trim().ToUpper();
+            string? newMaCode = request.MaCode.Trim().ToUpper();
 
             // Kiểm tra trùng MaCode (loại trừ chính nó)
-            if (!string.IsNullOrWhiteSpace(newMaCode))
-            {
-                if (await IsMaCodeDuplicate(newMaCode, excludePromoId: id))
-                    return BadRequest(new { message = "Mã Code này đã tồn tại ở chương trình khác." });
-            }
+            if (await IsMaCodeDuplicate(newMaCode, excludePromoId: id))
+                return BadRequest(new { message = "Mã Code này đã tồn tại ở chương trình khác." });
 
-            // Nếu là toàn sàn và đang bật, kiểm tra giới hạn
-            if (request.PhamVi == "all" && string.IsNullOrWhiteSpace(newMaCode) && promo.TrangThai == Enums.TrangThaiHoatDong.HoatDong)
-            {
-                if (await HasActiveGlobalPromo(excludePromoId: id))
-                    return BadRequest(new { message = "Đã có chương trình toàn sàn khác đang hoạt động." });
-            }
+            // Nếu là toàn sàn, kiểm tra giới hạn
+            bool isGlobal = string.IsNullOrWhiteSpace(request.DanhMucId) && (request.SanPhamIds == null || !request.SanPhamIds.Any());
+            if (isGlobal && await HasActiveGlobalPromo(excludePromoId: id))
+                return BadRequest(new { message = "Đã có chương trình toàn sàn khác đang hoạt động." });
 
             // Cập nhật thông tin
             promo.Ten = request.Ten.Trim();
@@ -277,15 +280,14 @@ public sealed class AdminPromotionsController : ControllerBase
             promo.NgayKetThuc = request.NgayKetThuc;
 
             // Cập nhật phạm vi
-            // Xóa hết liên kết cũ
             _dbContext.KhuyenMaiSanPhams.RemoveRange(promo.KhuyenMaiSanPhams);
             promo.DanhMucID = null;
 
-            if (request.PhamVi == "category" && !string.IsNullOrWhiteSpace(request.DanhMucId))
+            if (!string.IsNullOrWhiteSpace(request.DanhMucId))
             {
                 promo.DanhMucID = request.DanhMucId;
             }
-            else if (request.PhamVi == "product" && request.SanPhamIds != null && request.SanPhamIds.Any())
+            else if (request.SanPhamIds != null && request.SanPhamIds.Any())
             {
                 foreach (var spId in request.SanPhamIds)
                 {
@@ -356,8 +358,9 @@ public sealed class AdminPromotionsController : ControllerBase
             if (promo is null)
                 return NotFound(new { message = "Không tìm thấy chương trình khuyến mãi." });
 
+            // Khi kích hoạt lại, nếu là toàn sàn thì kiểm tra
             if (promo.TrangThai == Enums.TrangThaiHoatDong.NgungHoatDong
-                && promo.MaCode == null
+                && string.IsNullOrEmpty(promo.DanhMucID)
                 && !promo.KhuyenMaiSanPhams.Any())
             {
                 if (await HasActiveGlobalPromo(excludePromoId: id))
@@ -417,8 +420,8 @@ public sealed class AdminPromoDetailResponse
     public DateTime NgayApDung { get; set; }
     public DateTime NgayKetThuc { get; set; }
     public int TrangThai { get; set; }
-    public string? DanhMucId { get; set; }         // MỚI
-    public string TenDanhMuc { get; set; } = "";   // MỚI
+    public string? DanhMucId { get; set; }
+    public string TenDanhMuc { get; set; } = "";
     public List<AdminPromoProductDto> DanhSachSanPhamApDung { get; set; } = new();
 }
 public sealed class AdminPromoProductDto
@@ -432,6 +435,7 @@ public sealed class AdminPromoCreateRequest
     [Required(ErrorMessage = "Tên chương trình không được để trống")]
     public string Ten { get; set; } = string.Empty;
 
+    [Required(ErrorMessage = "Mã Code là bắt buộc")] // Thêm Required
     public string? MaCode { get; set; }
     public string? MoTa { get; set; }
 
@@ -459,4 +463,4 @@ public sealed class AdminPromoCreateRequest
     public string? DanhMucId { get; set; }
     public List<string>? SanPhamIds { get; set; }
 }
-#endregion
+#endregion  

@@ -240,7 +240,54 @@ public class AccountController : Controller
 
         return View(model);
     }
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Profile(AccountProfileViewModel model)
+    {
+        var user = await GetCurrentAccountAsync();
+        if (user is null) return RedirectToAction(nameof(Login));
 
+        // Kiểm tra ModelState
+        if (!ModelState.IsValid)
+        {
+            // Nạp lại DefaultAddressText để hiển thị
+            model.DefaultAddressText = await GetDefaultAddressTextAsync(user.KhachHang!.KhachHangID);
+            return View(model);
+        }
+
+        // Cập nhật thông tin khách hàng
+        var customer = user.KhachHang!;
+        customer.Ten = model.FullName.Trim();
+
+        // Chuẩn hóa và kiểm tra trùng số điện thoại
+        var normalizedPhone = NormalizePhoneForStorage(model.Phone);
+        var existingPhone = await _dbContext.KhachHangs
+            .FirstOrDefaultAsync(c => c.SoDienThoai == normalizedPhone && c.KhachHangID != customer.KhachHangID);
+        if (existingPhone != null)
+        {
+            ModelState.AddModelError(nameof(AccountProfileViewModel.Phone), "Số điện thoại này đã được sử dụng bởi tài khoản khác.");
+            model.DefaultAddressText = await GetDefaultAddressTextAsync(customer.KhachHangID);
+            return View(model);
+        }
+        customer.SoDienThoai = normalizedPhone;
+
+        // Cập nhật email (nếu thay đổi) và kiểm tra trùng
+        if (!string.Equals(user.Email, model.Email, StringComparison.OrdinalIgnoreCase))
+        {
+            var emailExists = await _dbContext.TaiKhoans.AnyAsync(t => t.Email == model.Email && t.TaiKhoanID != user.TaiKhoanID);
+            if (emailExists)
+            {
+                ModelState.AddModelError(nameof(AccountProfileViewModel.Email), "Email này đã được sử dụng.");
+                model.DefaultAddressText = await GetDefaultAddressTextAsync(customer.KhachHangID);
+                return View(model);
+            }
+            user.Email = model.Email;
+        }
+
+        await _dbContext.SaveChangesAsync();
+        TempData["ProfileStatus"] = "Thông tin tài khoản đã được cập nhật.";
+        return RedirectToAction(nameof(Profile));
+    }
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> SaveAddress(AddressFormViewModel form)

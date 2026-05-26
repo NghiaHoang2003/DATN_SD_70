@@ -34,12 +34,14 @@ namespace DATN_70.Models.Entities
         public string DiaChiID { get; set; }
 
         [MaxLength(20)]
-        public string? KhuyenMaiID { get; set; }  
-        
+        public string? KhuyenMaiID { get; set; }
+        [MaxLength(1000)] // Đủ dài để chứa JSON danh sách voucher
+        public string? VoucherData { get; set; }
         public KhachHang KhachHang { get; set; }
         public NhanVien NhanVien { get; set; }
         public DiaChi DiaChi { get; set; }
         public KhuyenMai KhuyenMai { get; set; }
+
         public ICollection<HoaDonChiTiet> HoaDonChiTiets { get; set; }
         public ICollection<ChiTietThanhToan> ChiTietThanhToans { get; set; }
     }

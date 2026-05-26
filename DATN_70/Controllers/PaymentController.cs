@@ -5,9 +5,9 @@ using DATN_70.Models.Orders;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PayOS;
-using PayOS.Models; 
+using PayOS.Models;
 using PayOS.Models.V2.PaymentRequests;
-using PayOS.Models.Webhooks; // Chứa class Webhook
+using PayOS.Models.Webhooks;
 using System;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -25,7 +25,7 @@ namespace DATN_70.Controllers
         private readonly PayOSClient _payOSClient;
         private readonly AppDbContext _dbContext;
 
-        public PaymentController(PayOSClient payOSClient, AppDbContext dbContext )
+        public PaymentController(PayOSClient payOSClient, AppDbContext dbContext)
         {
             _payOSClient = payOSClient;
             _dbContext = dbContext;
@@ -65,10 +65,67 @@ namespace DATN_70.Controllers
 
                 // 4. Cập nhật trạng thái thanh toán -> Thành công
                 chiTietThanhToan.TrangThai = Enums.TrangThaiThanhToan.ThanhCong;
-                await _dbContext.SaveChangesAsync(); // Chỉ lưu thay đổi này thôi
 
-                Console.WriteLine($"[WEBHOOK] Đã ghi nhận thanh toán thành công cho OrderCode={currentOrderCodeStr}. Chờ nhân viên xác nhận in hóa đơn.");
-                return Ok(new { success = true, message = "Ghi nhận thanh toán thành công." });
+                // 5. Tìm hóa đơn liên quan
+                var hoaDon = await _dbContext.HoaDons
+                    .Include(h => h.HoaDonChiTiets)
+                    .FirstOrDefaultAsync(h => h.HoaDonID == chiTietThanhToan.HoaDonID);
+
+                if (hoaDon != null)
+                {
+                    // Chỉ tự động xử lý nếu là đơn Online (LoaiGiaoDich = 0)
+                    if (hoaDon.LoaiGiaoDich == Enums.LoaiGiaoDich.Online)
+                    {
+                        bool canConfirm = hoaDon.TrangThai == Enums.TrangThaiHoaDon.ChoDuyet ||
+                                          hoaDon.TrangThai == Enums.TrangThaiHoaDon.DangChoThanhToanQR;
+
+                        if (canConfirm)
+                        {
+                            // Trừ kho nếu là QR (trạng thái 7)
+                            if (hoaDon.TrangThai == Enums.TrangThaiHoaDon.DangChoThanhToanQR)
+                            {
+                                var chiTietHoaDon = await _dbContext.HoaDonChiTiets
+                                    .Where(hdct => hdct.HoaDonID == hoaDon.HoaDonID)
+                                    .ToListAsync();
+
+                                foreach (var item in chiTietHoaDon)
+                                {
+                                    var ctsp = await _dbContext.ChiTietSanPhams
+                                        .FirstOrDefaultAsync(ct => ct.ChiTietSanPhamID == item.ChiTietSanPhamID);
+                                    if (ctsp != null)
+                                    {
+                                        ctsp.SoLuongTonKho -= item.SoLuong;
+                                    }
+                                }
+                            }
+
+                            // Trừ khuyến mãi (nếu có)
+                            if (!string.IsNullOrEmpty(hoaDon.KhuyenMaiID))
+                            {
+                                var khuyenMai = await _dbContext.KhuyenMais
+                                    .FirstOrDefaultAsync(km => km.KhuyenMaiID == hoaDon.KhuyenMaiID);
+
+                                if (khuyenMai != null && (khuyenMai.SoLuongToiDa == 0 || khuyenMai.SoLuongDaDung < khuyenMai.SoLuongToiDa))
+                                {
+                                    khuyenMai.SoLuongDaDung += 1;
+                                    Console.WriteLine($"[WEBHOOK] Đã tăng số lần sử dụng cho khuyến mãi {khuyenMai.KhuyenMaiID} (Mã: {khuyenMai.MaCode ?? "Tự động"})");
+                                }
+                            }
+
+                            // Chuyển trạng thái
+                            hoaDon.TrangThai = Enums.TrangThaiHoaDon.DaXacNhan;
+                            Console.WriteLine($"[WEBHOOK] Đơn hàng online {hoaDon.HoaDonID} đã được xác nhận tự động.");
+                        }
+                    }
+                    else // Đơn POS: không tự động xác nhận, chỉ ghi nhận thanh toán
+                    {
+                        Console.WriteLine($"[WEBHOOK] Đơn hàng POS {hoaDon.HoaDonID} - chỉ ghi nhận thanh toán, chờ nhân viên xác nhận.");
+                    }
+                }
+
+                await _dbContext.SaveChangesAsync();
+
+                return Ok(new { success = true, message = "Cập nhật thanh toán thành công." });
             }
             catch (Exception ex)
             {
@@ -77,37 +134,6 @@ namespace DATN_70.Controllers
             }
         }
 
-        //[HttpPost("create-payment")]
-        //public async Task<IActionResult> CreatePaymentUrl([FromBody] PaymentRequestModel req)
-        //{
-        //    try
-        //    {
-        //        long orderCode = long.Parse(DateTime.Now.ToString("ddHHmmss"));
-
-        //        var paymentRequest = new CreatePaymentLinkRequest
-        //        {
-        //            OrderCode = orderCode,
-        //            Amount = req.Amount, // LẤY SỐ TIỀN THỰC TẾ TỪ QUẦY POS TRUYỀN LÊN
-        //            Description = $"WINTERPOS {orderCode}",
-        //            CancelUrl = "https://localhost:7220/Home/Cancel",
-        //            ReturnUrl = "https://localhost:7220/Home/Success"
-        //        };
-
-        //        var paymentLink = await _payOSClient.PaymentRequests.CreateAsync(paymentRequest);
-
-        //        return Ok(new
-        //        {
-        //            success = true,
-        //            checkoutUrl = paymentLink.CheckoutUrl,
-        //            orderCode = orderCode
-        //        });
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Console.WriteLine($"[LỖI TẠO LINK QR]: {ex.Message}");
-        //        return BadRequest(new { success = false, message = ex.Message });
-        //    }
-        //}
         [HttpPost("create-online-payment")]
         public async Task<IActionResult> CreateOnlinePaymentUrl(
      [FromBody] CreateOnlinePaymentRequest request,
@@ -124,7 +150,7 @@ namespace DATN_70.Controllers
 
             // 2. TÌM HÓA ĐƠN VÀ KIỂM TRA QUYỀN SỞ HỮU
             var hoaDon = await _dbContext.HoaDons
-                .Include(h => h.ChiTietThanhToans) // Để kiểm tra xem đã có thanh toán nào chưa
+                .Include(h => h.ChiTietThanhToans)
                 .FirstOrDefaultAsync(h => h.HoaDonID == request.HoaDonID, cancellationToken);
 
             if (hoaDon == null)
@@ -132,9 +158,7 @@ namespace DATN_70.Controllers
                 return NotFound(new { message = "Không tìm thấy hóa đơn." });
             }
 
-
-
-            // Kiểm tra trạng thái: Chỉ tạo link khi hóa đơn ở trạng thái Chờ duyệt
+            // Kiểm tra trạng thái: Chỉ tạo link khi hóa đơn ở trạng thái Chờ duyệt hoặc Chờ thanh toán QR
             if (hoaDon.TrangThai != Enums.TrangThaiHoaDon.ChoDuyet && hoaDon.TrangThai != Enums.TrangThaiHoaDon.DangChoThanhToanQR)
             {
                 return BadRequest(new { message = $"Đơn hàng không ở trạng thái chờ thanh toán. Trạng thái hiện tại: {hoaDon.TrangThai}" });
@@ -152,10 +176,10 @@ namespace DATN_70.Controllers
                 }
             }
 
-            // 3. SINH MÃ ORDERCODE DUY NHẤT (AN TOÀN, KHÔNG TRÙNG)
+            // 3. SINH MÃ ORDERCODE DUY NHẤT
             long orderCode = GenerateUniquePayOSOrderCode();
 
-            // 4. TẠO BẢN GHI CHI TIẾT THANH TOÁN (TRẠNG THÁI CHỜ)
+            // 4. TẠO BẢN GHI CHI TIẾT THANH TOÁN
             var chiTietThanhToan = new ChiTietThanhToan
             {
                 ChiTietThanhToanID = Guid.NewGuid().ToString(),
@@ -164,8 +188,8 @@ namespace DATN_70.Controllers
                 SoTien = (decimal)hoaDon.ThanhTien,
                 MaThamChieu = orderCode.ToString(),
                 ThoiGianThanhToan = DateTime.Now,
-                TrangThai = Enums.TrangThaiThanhToan.ThatBai, // Chưa thanh toán
-                PhuongThucThanhToanID = "CASH" // Hoặc một mã riêng cho QR Online nếu có
+                TrangThai = Enums.TrangThaiThanhToan.ThatBai,
+                PhuongThucThanhToanID = "CASH"
             };
             _dbContext.Set<ChiTietThanhToan>().Add(chiTietThanhToan);
             await _dbContext.SaveChangesAsync(cancellationToken);
@@ -193,27 +217,22 @@ namespace DATN_70.Controllers
             }
             catch (Exception ex)
             {
-                // Nếu gọi PayOS thất bại, xóa bản ghi ChiTietThanhToan vừa tạo
                 _dbContext.Set<ChiTietThanhToan>().Remove(chiTietThanhToan);
                 await _dbContext.SaveChangesAsync(cancellationToken);
-
-                // Trả lỗi chi tiết ra ngoài để test (CHỈ DÙNG KHI TEST, sau này phải ẩn đi)
                 return StatusCode(500, new { success = false, message = ex.Message });
             }
         }
 
-        // Hàm sinh OrderCode an toàn (đặt trong cùng controller)
         private long GenerateUniquePayOSOrderCode()
         {
-            // Sử dụng timestamp đến mili giây + 3 chữ số random cuối để đảm bảo duy nhất
             var timestampPart = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
             var randomPart = new Random().Next(100, 999).ToString();
             return long.Parse(timestampPart + randomPart);
         }
+
         [HttpDelete("cancel-qr/{hoaDonId}")]
         public async Task<IActionResult> CancelQRPayment(string hoaDonId)
         {
-            // Xóa link thanh toán QR nếu có
             var chiTiet = await _dbContext.Set<ChiTietThanhToan>()
                 .FirstOrDefaultAsync(c => c.HoaDonID == hoaDonId && c.TrangThai == Enums.TrangThaiThanhToan.ThatBai);
             if (chiTiet != null)
@@ -221,7 +240,6 @@ namespace DATN_70.Controllers
                 _dbContext.Set<ChiTietThanhToan>().Remove(chiTiet);
             }
 
-            // Nếu đơn hàng đang ở trạng thái 7 (Chờ thanh toán QR), hủy luôn đơn hàng
             var hoaDon = await _dbContext.HoaDons.FirstOrDefaultAsync(h => h.HoaDonID == hoaDonId);
             if (hoaDon != null && hoaDon.TrangThai == Enums.TrangThaiHoaDon.DangChoThanhToanQR)
             {
@@ -231,17 +249,15 @@ namespace DATN_70.Controllers
             await _dbContext.SaveChangesAsync();
             return Ok(new { success = true });
         }
+
         [HttpPost("create-qr-intent")]
         public async Task<IActionResult> CreateQRPaymentIntent([FromBody] PlaceOrderRequest request)
         {
-            // Lưu toàn bộ request vào Session để webhook dùng lại
             HttpContext.Session.SetString("LastPlaceOrderRequest", JsonSerializer.Serialize(request));
 
-            // Sinh mã OrderCode
             long orderCode = GenerateUniquePayOSOrderCode();
 
-            // Tạo link PayOS (dùng số tiền tạm, hoặc tính từ giỏ hàng)
-            int tempAmount = 1000; // Có thể tính thật từ cartItems
+            int tempAmount = 1000;
             var paymentRequest = new CreatePaymentLinkRequest
             {
                 OrderCode = orderCode,

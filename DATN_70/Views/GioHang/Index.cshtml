@@ -17,6 +17,9 @@
             </a>
         </div>
 
+        <!-- KHU VỰC THÔNG BÁO KHUYẾN MÃI TOÀN SÀN -->
+        <div id="globalPromoBanner" class="mb-4 d-none"></div>
+
         <div class="row g-4">
 
             <div class="col-lg-8">
@@ -78,3 +81,113 @@
         font-weight: 800;
     }
 </style>
+
+@section Scripts {
+    <script>
+        // ===== HÀM RENDER GIỎ HÀNG (ĐÃ BỔ SUNG THÔNG BÁO KHUYẾN MÃI) =====
+        function renderCart(state) {
+            const items = state.items || [];
+            const container = document.getElementById('cartItemsContainer');
+            const countSpan = document.getElementById('cartHeadCount');
+            const globalBanner = document.getElementById('globalPromoBanner');
+
+            if (items.length === 0) {
+                container.innerHTML = `<div class="text-center py-5 bg-white rounded-4 shadow-sm border text-muted">
+                    <i class="bi bi-cart-x display-1"></i>
+                    <h5 class="fw-bold mt-2">Giỏ hàng trống</h5>
+                    <p class="small">Hãy thêm sản phẩm vào giỏ hàng để tiếp tục.</p>
+                </div>`;
+                countSpan.textContent = '0';
+                if (globalBanner) globalBanner.classList.add('d-none');
+                updateTotals(0, 0, 0);
+                return;
+            }
+
+            countSpan.textContent = items.reduce((sum, i) => sum + i.soLuong, 0);
+
+            // Render từng sản phẩm
+            container.innerHTML = items.map(item => {
+                const promoBadge = item.promoName
+                    ? `<span class="badge bg-danger-subtle text-danger rounded-pill ms-2 small">
+                         <i class="bi bi-tag-fill me-1"></i>${item.promoName} (-${(item.discountAmount * item.soLuong).toLocaleString('vi-VN')}đ)
+                       </span>`
+                    : '';
+                const itemTotal = item.donGia * item.soLuong;
+                const originalPrice = item.giaGoc > item.donGia
+                    ? `<div class="text-muted text-decoration-line-through small">${(item.giaGoc).toLocaleString('vi-VN')} đ</div>`
+                    : '';
+                return `
+                <div class="cart-item bg-white rounded-4 shadow-sm border p-3 d-flex align-items-center gap-3">
+                    <div style="width: 80px; height: 80px; flex-shrink: 0;">
+                        <img src="${item.hinhAnhUrl || '/images/default-product.png'}"
+                             onerror="this.src='/images/default-product.png'"
+                             alt="${item.tenSanPham}"
+                             style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;" />
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="fw-bold text-dark">${item.tenSanPham}</div>
+                        <div class="text-muted small">${item.phanLoai}</div>
+                        ${item.isActive === false ? '<div class="text-danger small mt-1"><i class="bi bi-exclamation-triangle-fill me-1"></i> Sản phẩm đã ngừng bán</div>' : ''}
+                        <div class="d-flex align-items-center mt-2">
+                            <span class="text-danger fw-bold">${item.donGia.toLocaleString('vi-VN')} đ</span>
+                            ${originalPrice}
+                            ${promoBadge}
+                        </div>
+                    </div>
+                    <div class="text-end" style="min-width: 120px;">
+                        <div class="d-flex align-items-center gap-2 justify-content-end mb-2">
+                            <button class="btn btn-sm btn-outline-secondary rounded-pill px-2" onclick="changeQuantity('${item.chiTietSanPhamID}', -1)">−</button>
+                            <span class="fw-bold">${item.soLuong}</span>
+                            <button class="btn btn-sm btn-outline-secondary rounded-pill px-2" onclick="changeQuantity('${item.chiTietSanPhamID}', 1)">+</button>
+                        </div>
+                        <div class="fw-bold text-dark">${itemTotal.toLocaleString('vi-VN')} đ</div>
+                        <button class="btn btn-link text-danger p-0 small" onclick="removeItem('${item.chiTietSanPhamID}')">Xóa</button>
+                    </div>
+                </div>`;
+            }).join('');
+
+            // Tính tổng tiền hàng
+            const subtotal = items.reduce((sum, i) => sum + (i.donGia * i.soLuong), 0);
+            const vat = items.reduce((sum, i) => sum + Math.round(i.donGia * i.soLuong * i.vatRate / 100), 0);
+            updateTotals(subtotal, vat, 0);
+
+            // Hiển thị banner khuyến mãi toàn sàn nếu có
+            if (state.globalPromoName && state.globalPromoMinOrder > 0) {
+                const remaining = state.globalPromoMinOrder - subtotal;
+                if (remaining > 0) {
+                    globalBanner.innerHTML = `
+                        <div class="alert alert-warning border-0 rounded-4 d-flex align-items-center gap-3 mb-0">
+                            <i class="bi bi-gift-fill fs-4 text-warning"></i>
+                            <div>
+                                <strong>Mua thêm ${remaining.toLocaleString('vi-VN')}đ</strong> để nhận ưu đãi từ chương trình <span class="fw-bold">"${state.globalPromoName}"</span>.
+                            </div>
+                        </div>`;
+                    globalBanner.classList.remove('d-none');
+                } else {
+                    globalBanner.innerHTML = `
+                        <div class="alert alert-success border-0 rounded-4 d-flex align-items-center gap-3 mb-0">
+                            <i class="bi bi-check-circle-fill fs-4 text-success"></i>
+                            <div>
+                                Đơn hàng của bạn đã đủ điều kiện nhận ưu đãi từ chương trình <span class="fw-bold">"${state.globalPromoName}"</span>.
+                            </div>
+                        </div>`;
+                    globalBanner.classList.remove('d-none');
+                }
+            } else {
+                globalBanner.classList.add('d-none');
+            }
+        }
+
+        function updateTotals(subtotal, vat, discount) {
+            document.getElementById('cartSubtotalAmount').textContent = subtotal.toLocaleString('vi-VN') + ' đ';
+            document.getElementById('cartVatAmount').textContent = vat.toLocaleString('vi-VN') + ' đ';
+            document.getElementById('cartDiscountAmount').textContent = discount === 0 ? '0 đ' : '-' + discount.toLocaleString('vi-VN') + ' đ';
+            document.getElementById('cartTotalAmount').textContent = (subtotal + vat - discount).toLocaleString('vi-VN') + ' đ';
+        }
+
+        // ===== CÁC HÀM XỬ LÝ GIỎ HÀNG (CẦN TÍCH HỢP VỚI site.js) =====
+        // Các hàm changeQuantity, removeItem sẽ gọi API qua window.winterCart.
+        // Để đơn giản, chúng ta giữ nguyên logic cũ từ site.js nếu có.
+        // Nếu bạn chưa có, cần bổ sung. Nhưng vì bạn đã có hệ thống giỏ hàng, tôi sẽ không ghi đè.
+    </script>
+}

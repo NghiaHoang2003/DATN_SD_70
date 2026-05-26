@@ -1,10 +1,12 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace DATN_70.Models.Cart;
 
 public sealed class CartResponse
 {
     public List<CartItemResponse> Items { get; set; } = [];
+    public string? GlobalPromoName { get; set; }       // <-- thêm
+    public decimal GlobalPromoMinOrder { get; set; }
 }
 
 public sealed class CartItemResponse
@@ -19,6 +21,8 @@ public sealed class CartItemResponse
     public decimal GiaGoc { get; set; }
     public int VatRate { get; set; }
     public bool IsActive { get; set; } = true;
+    public string? PromoName { get; set; }
+    public decimal DiscountAmount { get; set; }  // số tiền đã giảm trên đơn giá
 }
 
 public sealed class AddCartItemRequest

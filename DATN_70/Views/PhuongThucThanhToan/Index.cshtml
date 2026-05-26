@@ -388,33 +388,49 @@
         });
 
         // Hàm render giỏ hàng ra giao diện
-                function renderCheckoutItems() {
-            const cartState = window.winterCart ? window.winterCart.getCartState() : { items: [] };
+                      function renderCheckoutItems() {
+            const cartState = window.winterCart ? window.winterCart.getCartState() : { items: [], globalPromoName: null, globalPromoMinOrder: 0 };
             const container = document.getElementById('checkoutItems');
             const placeOrderBtn = document.getElementById('placeOrderButton');
             const summaryMsg = document.getElementById('checkoutSummaryMessage');
 
             if (container && cartState.items.length > 0) {
-                container.innerHTML = cartState.items.map(item => `
-                    <article class="checkout-item d-flex align-items-center gap-3" data-vat-rate="${item.vatRate || 10}">
-                        <div class="thumb-wrap" style="width: 60px; height: 60px; flex-shrink: 0;">
-                            <img src="${item.hinhAnhUrl || item.imageUrl || '/images/default-product.png'}"
-                                 onerror="this.src='/images/default-product.png'"
-                                 alt="${item.tenSanPham}"
-                                 style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;" />
-                        </div>
-                        <div style="flex: 1;">
-                            <div class="product-name fw-bold text-dark" style="font-size: 0.9rem;">${item.tenSanPham}</div>
-                            <div class="item-meta text-muted" style="font-size: 0.8rem;">${item.phanLoai} · SL: ${item.soLuong}</div>
-                            ${item.isActive === false ? '<div class="text-danger small mt-1"><i class="bi bi-exclamation-triangle-fill me-1"></i> Sản phẩm đã ngừng bán</div>' : ''}
-                        </div>
-                        <strong class="price-sale text-danger">${(item.donGia * item.soLuong).toLocaleString('vi-VN')} đ</strong>
-                    </article>
-                `).join('');
+                container.innerHTML = cartState.items.map(item => {
+                    const promoBadge = item.promoName
+                        ? `<span class="badge bg-danger-subtle text-danger rounded-pill ms-1 small">
+                             <i class="bi bi-tag-fill me-1"></i>${item.promoName}
+                           </span>`
+                        : '';
+                    const originalPrice = item.giaGoc > item.donGia
+                        ? `<div class="text-muted text-decoration-line-through small">${(item.giaGoc).toLocaleString('vi-VN')} đ</div>`
+                        : '';
+                    return `
+                        <article class="checkout-item d-flex align-items-center gap-3" data-vat-rate="${item.vatRate || 10}">
+                            <div class="thumb-wrap" style="width: 60px; height: 60px; flex-shrink: 0;">
+                                <img src="${item.hinhAnhUrl || item.imageUrl || '/images/default-product.png'}"
+                                     onerror="this.src='/images/default-product.png'"
+                                     alt="${item.tenSanPham}"
+                                     style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;" />
+                            </div>
+                            <div style="flex: 1;">
+                                <div class="product-name fw-bold text-dark" style="font-size: 0.9rem;">
+                                    ${item.tenSanPham}
+                                    ${promoBadge}
+                                </div>
+                                <div class="item-meta text-muted" style="font-size: 0.8rem;">${item.phanLoai} · SL: ${item.soLuong}</div>
+                                ${item.isActive === false ? '<div class="text-danger small mt-1"><i class="bi bi-exclamation-triangle-fill me-1"></i> Sản phẩm đã ngừng bán</div>' : ''}
+                            </div>
+                            <div class="text-end">
+                                <strong class="price-sale text-danger">${(item.donGia * item.soLuong).toLocaleString('vi-VN')} đ</strong>
+                                ${originalPrice}
+                            </div>
+                        </article>`;
+                }).join('');
+
                 const subtotal = cartState.items.reduce((sum, i) => sum + (i.donGia * i.soLuong), 0);
                 document.getElementById('checkoutSubtotal').textContent = subtotal.toLocaleString('vi-VN') + ' đ';
 
-                // Kiểm tra có sản phẩm bị ẩn không
+                // Kiểm tra sản phẩm bị ẩn
                 const hasInactive = cartState.items.some(item => item.isActive === false);
                 if (hasInactive) {
                     if (placeOrderBtn) {
@@ -433,14 +449,24 @@
                         placeOrderBtn.classList.remove('btn-secondary');
                         placeOrderBtn.classList.add('btn-dark');
                     }
-                    if (summaryMsg) summaryMsg.innerHTML = '';
+
+                    // Thông báo khuyến mãi toàn sàn
+                    if (cartState.globalPromoName && cartState.globalPromoMinOrder > 0) {
+                        const remaining = cartState.globalPromoMinOrder - subtotal;
+                        if (remaining > 0) {
+                            summaryMsg.innerHTML = `<div class="alert alert-warning small py-2 mb-0"><i class="bi bi-gift-fill me-1"></i> Mua thêm <strong>${remaining.toLocaleString('vi-VN')}đ</strong> để nhận ưu đãi từ chương trình <strong>"${cartState.globalPromoName}"</strong>.</div>`;
+                        } else {
+                            summaryMsg.innerHTML = `<div class="alert alert-success small py-2 mb-0"><i class="bi bi-check-circle-fill me-1"></i> Đơn hàng của bạn đã đủ điều kiện nhận ưu đãi từ chương trình <strong>"${cartState.globalPromoName}"</strong>.</div>`;
+                        }
+                    } else {
+                        summaryMsg.innerHTML = '';
+                    }
                 }
 
                 const pSelect = document.getElementById('checkoutProvince');
                 if (pSelect && pSelect.value) pSelect.dispatchEvent(new Event('change'));
             }
         }
-                let appliedCoupons = []; // danh sách mã đã thêm (mảng object từ API)
 
         // // Load danh sách mã khả dụng khi trang load
         // async function loadAvailableCoupons() {

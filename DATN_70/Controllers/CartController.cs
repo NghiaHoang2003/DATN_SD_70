@@ -249,53 +249,66 @@ public sealed class CartController : ControllerBase
         // Lấy khuyến mãi toàn sàn
         var globalPromo = await GetActiveGlobalPromoAsync(cancellationToken);
 
-        // Lấy khuyến mãi theo sản phẩm
+        // Lấy khuyến mãi theo sản phẩm (dạng dictionary)
         var discounts = await GetActiveDiscountsAsync(
             items.Select(i => i.ChiTietSanPham.SanPhamID).Distinct().ToList(),
             cancellationToken);
 
-        return new CartResponse
+        decimal cartSubtotal = 0;   // tổng tiền hàng sau giảm giá, chưa VAT
+        var responseItems = new List<CartItemResponse>();
+
+        foreach (var item in items)
         {
-            Items = items.Select(item =>
+            var basePrice = item.ChiTietSanPham.GiaNiemYet;
+            var vatRate = item.ChiTietSanPham.SanPham.MucVAT;
+
+            // Lấy khuyến mãi riêng nếu có
+            var productPromo = discounts.GetValueOrDefault(item.ChiTietSanPham.SanPhamID);
+
+            // Chọn khuyến mãi tốt nhất cho sản phẩm này
+            KhuyenMai? bestPromo = null;
+            decimal bestPrice = basePrice;
+            if (globalPromo != null)
             {
-                var basePrice = item.ChiTietSanPham.GiaNiemYet;
-                var vatRate = item.ChiTietSanPham.SanPham.MucVAT;
+                var globalPrice = ApplyDiscount(basePrice, globalPromo);
+                if (globalPrice < bestPrice) { bestPrice = globalPrice; bestPromo = globalPromo; }
+            }
+            if (productPromo != null)
+            {
+                var productPrice = ApplyDiscount(basePrice, productPromo);
+                if (productPrice < bestPrice) { bestPrice = productPrice; bestPromo = productPromo; }
+            }
 
-                // Ưu tiên khuyến mãi toàn sàn, nếu không có thì dùng khuyến mãi sản phẩm
-                // Lấy khuyến mãi riêng nếu có
-                var productPromo = discounts.GetValueOrDefault(item.ChiTietSanPham.SanPhamID);
-                // Chọn khuyến mãi cho giá thấp nhất
-                KhuyenMai? bestPromo = null;
-                decimal bestPrice = basePrice;
-                if (globalPromo != null)
-                {
-                    var globalPrice = ApplyDiscount(basePrice, globalPromo);
-                    if (globalPrice < bestPrice) { bestPrice = globalPrice; bestPromo = globalPromo; }
-                }
-                if (productPromo != null)
-                {
-                    var productPrice = ApplyDiscount(basePrice, productPromo);
-                    if (productPrice < bestPrice) { bestPrice = productPrice; bestPromo = productPromo; }
-                }
-                var finalPrice = bestPrice; // dùng cho DonGia
-                
+            decimal finalPrice = bestPrice;
+            decimal discountAmount = basePrice - finalPrice;  // số tiền giảm trên mỗi đơn vị
 
-                return new CartItemResponse
-                {
-                    SanPhamID = item.ChiTietSanPham.SanPhamID,
-                    ChiTietSanPhamID = item.ChiTietSanPhamID,
-                    TenSanPham = item.ChiTietSanPham.SanPham.Ten,
-                    PhanLoai = $"{item.ChiTietSanPham.Mau.Ten} / {item.ChiTietSanPham.KichCo.Ten.Replace("Size ", string.Empty)}",
-                    SoLuong = item.SoLuong,
-                    DonGia = finalPrice,          // giá sau khuyến mãi
-                    GiaGoc = basePrice,           // giá gốc để hiển thị nếu cần
-                    VatRate = vatRate,            // để tính VAT
-                    TonKho = item.ChiTietSanPham.SoLuongTonKho,
-                    IsActive = item.ChiTietSanPham.SanPham.IsActive
+            responseItems.Add(new CartItemResponse
+            {
+                SanPhamID = item.ChiTietSanPham.SanPhamID,
+                ChiTietSanPhamID = item.ChiTietSanPhamID,
+                TenSanPham = item.ChiTietSanPham.SanPham.Ten,
+                PhanLoai = $"{item.ChiTietSanPham.Mau.Ten} / {item.ChiTietSanPham.KichCo.Ten.Replace("Size ", string.Empty)}",
+                SoLuong = item.SoLuong,
+                DonGia = finalPrice,
+                GiaGoc = basePrice,
+                VatRate = vatRate,
+                TonKho = item.ChiTietSanPham.SoLuongTonKho,
+                IsActive = item.ChiTietSanPham.SanPham.IsActive,
+                PromoName = bestPromo?.Ten,               // tên khuyến mãi đang áp dụng
+                DiscountAmount = discountAmount
+            });
 
-                };
-            }).ToList()
+            cartSubtotal += finalPrice * item.SoLuong;
+        }
+
+        var response = new CartResponse
+        {
+            Items = responseItems,
+            GlobalPromoName = globalPromo?.Ten,
+            GlobalPromoMinOrder = globalPromo?.GiaTriToiThieuApDung ?? 0
         };
+
+        return response;
     }
 
     private async Task<decimal> GetCurrentUnitPriceAsync(ChiTietSanPham variant, CancellationToken cancellationToken)

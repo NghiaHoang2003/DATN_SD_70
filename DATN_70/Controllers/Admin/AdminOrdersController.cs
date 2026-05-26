@@ -45,7 +45,7 @@ public sealed class AdminOrdersController : ControllerBase
             .OrderByDescending(h => h.NgayTao)
             .Select(h => new AdminOrderSummaryResponse
             {
-                
+
                 HoaDonId = h.HoaDonID,
                 NgayTao = h.NgayTao,
                 TenKhachHang = h.KhachHang != null ? h.KhachHang.Ten : "Khách ẩn danh",
@@ -141,9 +141,10 @@ public sealed class AdminOrdersController : ControllerBase
             if (order.TrangThai == Enums.TrangThaiHoaDon.HoanThanh || order.TrangThai == Enums.TrangThaiHoaDon.DaHuy)
                 return BadRequest(new { message = "Đơn hàng đã kết thúc tiến trình." });
 
-            // Nếu đang từ Chờ duyệt (0) -> Xác nhận (1): trừ tồn kho
+            // Nếu đang từ Chờ duyệt (0) -> Xác nhận (1): trừ tồn kho VÀ trừ khuyến mãi
             if (order.TrangThai == Enums.TrangThaiHoaDon.ChoDuyet)
             {
+                // Trừ tồn kho (giữ nguyên)
                 var chiTietList = await _dbContext.HoaDonChiTiets
                     .Where(hdct => hdct.HoaDonID == order.HoaDonID)
                     .ToListAsync();
@@ -154,6 +155,18 @@ public sealed class AdminOrdersController : ControllerBase
                         .FirstOrDefaultAsync(ct => ct.ChiTietSanPhamID == item.ChiTietSanPhamID);
                     if (ctsp != null)
                         ctsp.SoLuongTonKho -= item.SoLuong;
+                }
+
+                // *** BỔ SUNG: Trừ khuyến mãi ***
+                if (!string.IsNullOrEmpty(order.KhuyenMaiID))
+                {
+                    var khuyenMai = await _dbContext.KhuyenMais
+                        .FirstOrDefaultAsync(km => km.KhuyenMaiID == order.KhuyenMaiID, cancellationToken);
+
+                    if (khuyenMai != null && (khuyenMai.SoLuongToiDa == 0 || khuyenMai.SoLuongDaDung < khuyenMai.SoLuongToiDa))
+                    {
+                        khuyenMai.SoLuongDaDung += 1;
+                    }
                 }
             }
 
@@ -214,6 +227,18 @@ public sealed class AdminOrdersController : ControllerBase
                     if (ctsp != null)
                         ctsp.SoLuongTonKho += item.SoLuong;
                 }
+
+                // *** BỔ SUNG: Hoàn trả khuyến mãi khi hủy đơn đã xác nhận ***
+                if (!string.IsNullOrEmpty(order.KhuyenMaiID))
+                {
+                    var khuyenMai = await _dbContext.KhuyenMais
+                        .FirstOrDefaultAsync(km => km.KhuyenMaiID == order.KhuyenMaiID, cancellationToken);
+
+                    if (khuyenMai != null && khuyenMai.SoLuongDaDung > 0)
+                    {
+                        khuyenMai.SoLuongDaDung -= 1;
+                    }
+                }
             }
             // Nếu đang giao hoặc giao thất bại: không cộng tồn kho (hàng chưa về)
 
@@ -233,7 +258,7 @@ public sealed class AdminOrdersController : ControllerBase
     public async Task<IActionResult> GetAllReturns(CancellationToken cancellationToken = default)
     {
         var returns = await _dbContext.Set<PhieuDoiTra>()
-            .Include(p => p.HoaDon) 
+            .Include(p => p.HoaDon)
                 .ThenInclude(h => h.KhachHang)
             .OrderByDescending(p => p.NgayTao)
             .Select(p => new {

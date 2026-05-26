@@ -21,9 +21,10 @@ public sealed class StoreRepository : IStoreRepository
             const string sql = """
             WITH ActiveGlobalPromo AS (
                 SELECT TOP 1 * FROM KhuyenMais
-                WHERE MaCode IS NULL AND TrangThai = 1 
+                WHERE DanhMucID IS NULL AND TrangThai = 1 
                   AND GETDATE() >= NgayApDung AND GETDATE() <= NgayKetThuc
                   AND (SoLuongToiDa = 0 OR SoLuongDaDung < SoLuongToiDa)
+                  AND NOT EXISTS (SELECT 1 FROM KhuyenMaiSanPhams ksp WHERE ksp.KhuyenMaiID = KhuyenMais.KhuyenMaiID)
             ),
             ActiveProductPromo AS (
                 SELECT ksp.SanPhamID, km.LoaiGiamGia, km.GiaTriGiam, km.GiamToiDa,
@@ -139,9 +140,10 @@ public sealed class StoreRepository : IStoreRepository
             const string variantSql = """
         WITH ActiveGlobalPromo AS (
             SELECT TOP 1 * FROM KhuyenMais
-            WHERE MaCode IS NULL AND TrangThai = 1 
+            WHERE DanhMucID IS NULL AND TrangThai = 1 
               AND GETDATE() >= NgayApDung AND GETDATE() <= NgayKetThuc
               AND (SoLuongToiDa = 0 OR SoLuongDaDung < SoLuongToiDa)
+              AND NOT EXISTS (SELECT 1 FROM KhuyenMaiSanPhams ksp WHERE ksp.KhuyenMaiID = KhuyenMais.KhuyenMaiID)
         ),
         ActiveProductPromo AS (
             SELECT ksp.SanPhamID, km.LoaiGiamGia, km.GiaTriGiam, km.GiamToiDa,
@@ -258,8 +260,9 @@ public sealed class StoreRepository : IStoreRepository
         {
             var orderId = GenerateId("HD", 20);
             var orderCreatedAt = DateTime.Now;
-            decimal totalAmount = 0; // Tiền hàng chưa VAT
+            decimal totalAmount = 0;
             decimal tongTienVat = 0;
+            string? orderPromoId = null;
             var orderDetails = new List<(string DetailId, string ProductDetailId, int Quantity, decimal UnitPrice, decimal LineTotal, int MucVAT)>();
 
             foreach (var item in normalizedItems)
@@ -267,29 +270,29 @@ public sealed class StoreRepository : IStoreRepository
                 var stockInfo = await GetStockInfoAsync(connection, transaction, item.ChiTietSanPhamID, cancellationToken);
                 if (stockInfo is null) { await transaction.RollbackAsync(cancellationToken); return ServiceResult<OrderCreatedResponse>.Fail($"Khong tim thay bien the {item.ChiTietSanPhamID}."); }
 
-                var (giaBan, soLuongTon, mucVAT) = stockInfo.Value;
+                var (giaBan, soLuongTon, mucVAT, promoId) = stockInfo.Value;
                 if (soLuongTon < item.SoLuong) { await transaction.RollbackAsync(cancellationToken); return ServiceResult<OrderCreatedResponse>.Fail($"San pham {item.ChiTietSanPhamID} chi con {soLuongTon} trong kho."); }
+
+                if (orderPromoId == null && !string.IsNullOrEmpty(promoId))
+                {
+                    orderPromoId = promoId;
+                }
 
                 var detailId = GenerateId("HDCT", 20);
                 var lineTotal = giaBan * item.SoLuong;
                 totalAmount += lineTotal;
 
-                // Tính VAT cho dòng này
                 var tienVatItem = Math.Round(lineTotal * mucVAT / 100m, 0);
                 tongTienVat += tienVatItem;
 
                 orderDetails.Add((detailId, item.ChiTietSanPhamID, item.SoLuong, giaBan, lineTotal, mucVAT));
             }
 
-            await InsertOrderAsync(connection, transaction, orderId, request, orderCreatedAt, totalAmount, tongTienVat, cancellationToken);
+            await InsertOrderAsync(connection, transaction, orderId, request, orderCreatedAt, totalAmount, tongTienVat, orderPromoId, cancellationToken);
 
             foreach (var detail in orderDetails)
             {
                 await InsertOrderDetailAsync(connection, transaction, orderId, detail, cancellationToken);
-                //if (request.PaymentMethod != "QR")
-                //{
-                //    await UpdateStockAsync(connection, transaction, detail.ProductDetailId, detail.Quantity, cancellationToken);
-                //}
             }
 
             await transaction.CommitAsync(cancellationToken);
@@ -321,7 +324,7 @@ public sealed class StoreRepository : IStoreRepository
         return new ProductDetailResponse { SanPhamID = reader.GetString(0), Ten = reader.GetString(1), MoTa = reader.IsDBNull(2) ? string.Empty : reader.GetString(2) };
     }
 
-    private static async Task<(decimal GiaBan, int SoLuongTon, int MucVAT)?> GetStockInfoAsync(SqlConnection connection, SqlTransaction transaction, string productDetailId, CancellationToken cancellationToken)
+    private static async Task<(decimal GiaBan, int SoLuongTon, int MucVAT, string? PromoId)?> GetStockInfoAsync(SqlConnection connection, SqlTransaction transaction, string productDetailId, CancellationToken cancellationToken)
     {
         try
         {
@@ -351,11 +354,17 @@ SELECT
         ELSE ctsp.GiaNiemYet
     END AS GiaBan,
     ctsp.SoLuongTonKho,
-    sp.MucVAT
+    sp.MucVAT,
+    CASE
+        WHEN agp.GiaTriGiam IS NOT NULL THEN agp.KhuyenMaiID
+        WHEN app.GiaTriGiam IS NOT NULL THEN app.KhuyenMaiID
+        ELSE NULL
+    END AS PromoId
 FROM ChiTietSanPhams ctsp WITH (UPDLOCK, ROWLOCK)
 INNER JOIN SanPhams sp ON ctsp.SanPhamID = sp.SanPhamID
 OUTER APPLY (
     SELECT TOP 1
+        km.KhuyenMaiID,
         km.LoaiGiamGia,
         km.GiaTriGiam,
         km.GiamToiDa
@@ -370,13 +379,18 @@ OUTER APPLY (
     ORDER BY km.GiaTriGiam DESC
 ) app
 OUTER APPLY (
-    SELECT TOP 1 *
+    SELECT TOP 1
+        KhuyenMaiID,
+        LoaiGiamGia,
+        GiaTriGiam,
+        GiamToiDa
     FROM KhuyenMais
-    WHERE MaCode IS NULL
+    WHERE DanhMucID IS NULL
       AND TrangThai = 1
       AND GETDATE() >= NgayApDung
       AND GETDATE() <= NgayKetThuc
       AND (SoLuongToiDa = 0 OR SoLuongDaDung < SoLuongToiDa)
+      AND NOT EXISTS (SELECT 1 FROM KhuyenMaiSanPhams ksp WHERE ksp.KhuyenMaiID = KhuyenMais.KhuyenMaiID)
 ) agp
 WHERE ctsp.ChiTietSanPhamID = @ChiTietSanPhamID;
 """;
@@ -385,7 +399,12 @@ WHERE ctsp.ChiTietSanPhamID = @ChiTietSanPhamID;
             command.Parameters.AddWithValue("@ChiTietSanPhamID", productDetailId);
             await using var reader = await command.ExecuteReaderAsync(cancellationToken);
             if (!await reader.ReadAsync(cancellationToken)) return null;
-            return (reader.GetDecimal(0), reader.GetInt32(1), reader.GetInt32(2));
+
+            var giaBan = reader.GetDecimal(0);
+            var soLuongTon = reader.GetInt32(1);
+            var mucVAT = reader.GetInt32(2);
+            var promoId = reader.IsDBNull(3) ? null : reader.GetString(3);
+            return (giaBan, soLuongTon, mucVAT, promoId);
         }
         catch (Exception ex)
         {
@@ -394,11 +413,11 @@ WHERE ctsp.ChiTietSanPhamID = @ChiTietSanPhamID;
         }
     }
 
-    private static async Task InsertOrderAsync(SqlConnection connection, SqlTransaction transaction, string orderId, PlaceOrderRequest request, DateTime createdAt, decimal totalAmount, decimal tongTienVat, CancellationToken cancellationToken)
+    private static async Task InsertOrderAsync(SqlConnection connection, SqlTransaction transaction, string orderId, PlaceOrderRequest request, DateTime createdAt, decimal totalAmount, decimal tongTienVat, string? promoId, CancellationToken cancellationToken)
     {
         const string sql = @"
 INSERT INTO HoaDons (HoaDonID, TongTienVAT, TongTienGiamGia, ThanhTien, LoaiGiaoDich, NgayTao, TrangThai, GhiChu, KhachHangID, NhanVienID, DiaChiID, KhuyenMaiID)
-VALUES (@HoaDonID, @TongTienVAT, 0, @ThanhTien, 0, @NgayTao, @TrangThai, @GhiChu, @KhachHangID, N'NV0001', @DiaChiID, NULL)";
+VALUES (@HoaDonID, @TongTienVAT, 0, @ThanhTien, 0, @NgayTao, @TrangThai, @GhiChu, @KhachHangID, N'NV0001', @DiaChiID, @KhuyenMaiID)";
 
         decimal shippingFee = request.ShippingFee;
         decimal thanhTienMoi = totalAmount + tongTienVat + shippingFee;
@@ -412,6 +431,7 @@ VALUES (@HoaDonID, @TongTienVAT, 0, @ThanhTien, 0, @NgayTao, @TrangThai, @GhiChu
         command.Parameters.AddWithValue("@GhiChu", "Đơn đặt từ Website bán hàng. ĐC giao: " + request.DiaChiGiaoHang);
         command.Parameters.AddWithValue("@KhachHangID", request.KhachHangID);
         command.Parameters.AddWithValue("@DiaChiID", request.DiaChiID);
+        command.Parameters.AddWithValue("@KhuyenMaiID", string.IsNullOrEmpty(promoId) ? DBNull.Value : promoId);
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
